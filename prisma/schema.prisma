@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(uuid())
+  fullName         String
+  age              Int
+  gender           Gender
+  email            String   @unique
+  whatsapp         String
+  medicalHistory   String?  // Optional
+  whyMove          String
+  fitnessGoal      String
+  consentAgreement Boolean  @default(true)
+  ageConfirmation  Boolean
+  paymentId        String?
+  paymentStatus    PaymentStatus @default(PENDING)
+  invoiceNumber    String?
+  uniqueId         String?   // e.g., NT-001
+  slot             Slot      @relation(fields: [slotId], references: [id])
+  slotId           String
+  createdAt        DateTime  @default(now())
+}
+
+model Slot {
+  id        String      @id @default(uuid())
+  date      DateTime
+  timeSlot  String
+  location  Location    @relation(fields: [locationId], references: [id])
+  locationId String
+  maxSlots  Int
+  createdAt DateTime    @default(now())
+  bookings  User[]
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  slots     Slot[]
+}
+
+model Config {
+  id        String   @id @default(uuid())
+  price     Int
+  updatedAt DateTime @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
