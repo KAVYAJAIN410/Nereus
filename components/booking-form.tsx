@@ -17,20 +17,25 @@ export type FormData = {
   email: string
   medicalHistory: string
   whyMove: string
+  userSessionNo: number
   fitnessGoal: string
-  slotId:string
+  timeSlotId:string
   consentAgreement: boolean
   ageConfirmation: boolean
 }
-interface Slot {
+export interface Slot {
   id: string
   date: string
-  location: string
-  time: string
+  location: {
+    name: string
+    address: string
+  }
+  timeSlot: string
 }
 export default function BookingForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
+const [paymentId, setPaymentId] = useState<string>("")
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     age: "",
@@ -40,7 +45,8 @@ export default function BookingForm() {
     medicalHistory: "",
     whyMove: "",
     fitnessGoal: "",
-    slotId:"",
+    userSessionNo:0,
+    timeSlotId:"",
     consentAgreement: false,
     ageConfirmation: false,
   })
@@ -60,10 +66,10 @@ export default function BookingForm() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-transparent">
       {currentStep < 5 && <ProgressSteps currentStep={currentStep} />}
 
-      <Card className="shadow-md">
+      <Card className="shadow-md bg-transparent">
         <CardContent className="pt-6">
           {currentStep === 1 && (
             <PersonalDetailsForm formData={formData} updateFormData={updateFormData} nextStep={nextStep} />
@@ -83,9 +89,9 @@ export default function BookingForm() {
             <ConsentForm formData={formData} updateFormData={updateFormData} nextStep={nextStep} prevStep={prevStep} />
           )}
 
-          {currentStep === 4 && <PaymentSection formData={formData} selectedSlot={selectedSlot} nextStep={nextStep} prevStep={prevStep}  />}
+          {currentStep === 4 && <PaymentSection formData={formData} selectedSlot={selectedSlot} nextStep={nextStep} prevStep={prevStep} setPaymentId={setPaymentId}  />}
 
-          {currentStep === 5 && <ConfirmationPage formData={formData} selectedSlot={selectedSlot} />}
+          {currentStep === 5 && <ConfirmationPage formData={formData} selectedSlot={selectedSlot}  paymentId={paymentId} />}
         </CardContent>
       </Card>
     </div>

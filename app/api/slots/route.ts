@@ -1,31 +1,52 @@
 // File: app/api/slots/route.ts
 
-import { NextResponse } from 'next/server';
-import { PrismaClient } from "../../../lib/generated/prisma"
-
+import { NextResponse } from 'next/server'
+import { PrismaClient } from '@/lib/generated/prisma'
 
 const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    const slots = await prisma.slot.findMany({
-        where: {
-    bookings: {
-      none: {}, 
-    },
-  },
-      select: {
-        id: true,
-        date: true,
-        location: true,
-        timeSlot: true,
-      },
-      orderBy: { date: 'asc' },
-    });
+    const results = await prisma.$queryRaw<any[]>`
+      SELECT 
+        sd.id AS "slotDateId",
+        sd.date AS "slotDateDate",
+        l.name AS "locationName",
+        ts.id AS "timeSlotId",
+        ts."startTime" AS "startTime",
+        ts."endTime" AS "endTime",
+        ts.count AS "count"
+      FROM "SlotDate" sd
+      JOIN "Location" l ON sd."locationId" = l.id
+      JOIN "TimeSlot" ts ON ts."slotDateId" = sd.id
+      WHERE ts.count > 0
+      ORDER BY sd.date ASC, ts."startTime" ASC;
+    `
 
-    return NextResponse.json(slots);
+    // Group by slotDate
+    const grouped: Record<string, any> = {}
+
+    for (const row of results) {
+      const key = `${row.slotDateId}`
+      if (!grouped[key]) {
+        grouped[key] = {
+          date: new Date(row.slotDateDate).toISOString(),
+          location: { name: row.locationName },
+          timeSlots: [],
+        }
+      }
+      grouped[key].timeSlots.push({
+        id: row.timeSlotId,
+        startTime: row.startTime,
+        endTime: row.endTime,
+      })
+    }
+
+    const formatted = Object.values(grouped)
+
+    return NextResponse.json(formatted)
   } catch (error) {
-    console.error('Error fetching slots:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('Error fetching slots:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
 }

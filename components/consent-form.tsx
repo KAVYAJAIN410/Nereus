@@ -52,8 +52,8 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold text-gray-800">Consent & Agreements</h2>
-        <p className="text-gray-500">Please review and accept our terms</p>
+        <h2 className="text-2xl font-semibold text-[#5cd2ec]">Consent & Agreements</h2>
+        <p className="text-white">Please review and accept our terms</p>
       </div>
 
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
@@ -194,7 +194,7 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
         <Button type="button" variant="outline" onClick={prevStep}>
           Back
         </Button>
-        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8">
+        <Button type="submit" className="bg-[#5cd2ec] text-white px-8">
           Proceed to Payment
         </Button>
       </div>

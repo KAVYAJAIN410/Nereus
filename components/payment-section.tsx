@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import type { FormData } from "./booking-form"
 import { Loader2 } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -22,44 +21,71 @@ interface PaymentSectionProps {
   selectedSlot: Slot | null
   nextStep: () => void
   prevStep: () => void
+  setPaymentId: (id: string) => void
 }
 
-export default function PaymentSection({ formData, selectedSlot, nextStep, prevStep }: PaymentSectionProps) {
+export default function PaymentSection({
+  formData,
+  selectedSlot,
+  nextStep,
+  prevStep,
+  setPaymentId,
+}: PaymentSectionProps) {
   const [amount, setAmount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-
+  const [timeLeft, setTimeLeft] = useState(300) // 5 min in seconds
 
   useEffect(() => {
     const script = document.createElement("script")
     script.src = "https://checkout.razorpay.com/v1/checkout.js"
     script.async = true
     document.body.appendChild(script)
-
     return () => {
       document.body.removeChild(script)
     }
   }, [])
 
+  // Timer countdown and expiry logic
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      nextStep() // Automatically go to next step
+      return
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [timeLeft])
+
   const handlePayment = async () => {
     setLoading(true)
     try {
+      console.log(formData)
       const response = await fetch("/api/form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       })
 
-      const { userId, order } = await response.json()
-      setAmount(order.amount / 100) // Optional: convert to rupees if you like
+      const data = await response.json()
+      if (!response.ok) {
+        alert(data.error || "Something went wrong. Please try again.")
+        setLoading(false)
+        prevStep()
+        return
+      }
+
+      const order = data.order
+      setAmount(order.amount / 100)
 
       if (!(window as any).Razorpay) {
-         setLoading(false)
-        alert("Razorpay SDK failed to load. Please try again later.")
+        alert("Razorpay SDK failed to load.")
+        setLoading(false)
         return
       }
 
       const razorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: "INR",
         name: "Nereus",
@@ -67,6 +93,7 @@ export default function PaymentSection({ formData, selectedSlot, nextStep, prevS
         image: "/logo.png",
         order_id: order.id,
         handler: function (response: any) {
+          setPaymentId(response.razorpay_payment_id)
           nextStep()
         },
         prefill: {
@@ -74,34 +101,30 @@ export default function PaymentSection({ formData, selectedSlot, nextStep, prevS
           email: formData.email,
           contact: formData.whatsapp,
         },
-        notes: {
-          userId: userId,
+        theme: { color: "#3399cc" },
+        modal: {
+          ondismiss: () => setLoading(false),
         },
-        theme: {
-          color: "#3399cc",
-        },
-         modal: {
-        ondismiss: () => {
-          setLoading(false)
-        }
-      },
       }
 
       const rzp = new (window as any).Razorpay(razorpayOptions)
       rzp.open()
     } catch (error) {
-          
-      console.error("Payment failed:", error)
+      console.error("Payment error:", error)
       alert("Something went wrong while initiating payment.")
-           setLoading(false)
+      setLoading(false)
     }
   }
+
+  const minutes = Math.floor(timeLeft / 60)
+  const seconds = timeLeft % 60
+  const formattedTime = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`
 
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold text-gray-800">Payment</h2>
-        <p className="text-gray-500">Complete your booking with secure payment</p>
+        <h2 className="text-2xl font-semibold text-[#5cd2ec]">Payment</h2>
+        <p className="text-white">Complete your booking with secure payment</p>
       </div>
 
       <Card>
@@ -125,26 +148,33 @@ export default function PaymentSection({ formData, selectedSlot, nextStep, prevS
                 <div className="border-t my-2 pt-2 flex justify-between">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold">
-                    ₹{amount !== null ? (amount / 100).toFixed(2) : "1"}
+                    ₹{amount !== null ? amount.toFixed(2) : "1"}
                   </span>
                 </div>
               </div>
             </div>
 
-           <Button
-  onClick={handlePayment}
-  disabled={loading}
-  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 font-medium flex items-center justify-center gap-2"
->
-  {loading ? (
-    <>
-      <Loader2 className="animate-spin w-5 h-5" />
-      Processing...
-    </>
-  ) : (
-    "Pay Securely with Razorpay"
-  )}
-</Button>
+            <p className="text-sm text-red-600 font-medium">
+              Please complete payment within{" "}
+              <span className="font-semibold">{formattedTime}</span>. You’ll be redirected after that.
+            </p>
+
+            <Button
+              onClick={handlePayment}
+              disabled={loading || timeLeft <= 0}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 font-medium flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin w-5 h-5" />
+                  Processing...
+                </>
+              ) : timeLeft <= 0 ? (
+                "Redirecting..."
+              ) : (
+                "Pay Securely with Razorpay"
+              )}
+            </Button>
 
             <div className="text-sm text-gray-600 mt-4">
               <p className="mb-2 font-medium">Refund & Cancellation Policy:</p>

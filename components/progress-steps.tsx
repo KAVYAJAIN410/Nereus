@@ -15,9 +15,9 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
             <div
               className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                 currentStep > index + 1
-                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  ? "bg-[#5cd2ec] border-[#5cd2ec] text-white"
                   : currentStep === index + 1
-                    ? "border-emerald-500 text-emerald-500"
+                    ? "border-[#5cd2ec] text-[#5cd2ec]"
                     : "border-gray-300 text-gray-300"
               }`}
             >
@@ -26,9 +26,9 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
             <span
               className={`mt-2 text-xs sm:text-sm ${
                 currentStep === index + 1
-                  ? "text-emerald-500 font-medium"
+                  ? "text-[#5cd2ec] font-medium"
                   : currentStep > index + 1
-                    ? "text-emerald-500"
+                    ? "text-[#5cd2ec]"
                     : "text-gray-500"
               }`}
             >
@@ -41,7 +41,7 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
         {steps.map((_, index) => {
           if (index < steps.length - 1) {
             return (
-              <div key={index} className={`flex-1 h-1 ${currentStep > index + 1 ? "bg-emerald-500" : "bg-gray-200"}`} />
+              <div key={index} className={`flex-1 h-1 ${currentStep > index + 1 ? "bg-[#5cd2ec]" : "bg-gray-200"}`} />
             )
           }
           return null
