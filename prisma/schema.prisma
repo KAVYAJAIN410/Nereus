@@ -1,18 +1,152 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"  // 👈 must be set
 }
-
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+  adminId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tests     Test[]
+  admin     User?    @relation("AdminToTesters", fields: [adminId], references: [id])
+  testers   User[]   @relation("AdminToTesters")
+}
+
+model Customer {
+  id                 String              @id @default(uuid())
+  name               String
+  age                Int
+  gender             String
+  height             Float
+  weight             Float
+  sleepLevels        Float
+  activityLevel      String
+  calorieIntake      Int
+  mood               String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  UniqueId           String?
+  movementSignature  MovementSignature?
+  sectionEvaluations SectionEvaluation[]
+  tests              Test[]
+  trainingPurposes   TrainingPurpose[]
+}
+
+model Test {
+  id         String      @id @default(uuid())
+  date       DateTime    @default(now())
+  status     String
+  customerId String
+  testerId   String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  exercises  Exercise[]
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  tester     User        @relation(fields: [testerId], references: [id])
+  ratings    TestRating?
+}
+
+model Exercise {
+  id         String              @id @default(uuid())
+  name       String
+  category   String
+  completed  Boolean             @default(false)
+  testId     String
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  test       Test                @relation(fields: [testId], references: [id])
+  assetFiles ExerciseAssetFile[]
+}
+
+model TestRating {
+  id               String   @id @default(uuid())
+  overall          Int
+  mobility         Int
+  strength         Int
+  endurance        Int
+  feedback         String?
+  customerFeedback String?
+  testId           String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+  test             Test     @relation(fields: [testId], references: [id])
+}
+
+model ExerciseAssetFile {
+  id              String   @id @default(uuid())
+  exerciseId      String
+  fileName        String
+  fileType        String
+  s3PathRaw       String
+  s3PathProcessed String?
+  status          String   @default("uploaded")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  analysisResults Json?
+  exercise        Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([exerciseId])
+}
+
+/// --------------------------------------------------------------------
+/// 2. SECTION-EVALUATION  (Mobility / Strength / Endurance)
+/// – one row per section per customer
+/// --------------------------------------------------------------------
+model SectionEvaluation {
+  id         String      @id @default(uuid())
+  customerId String
+  section    EvalSection
+  dropdowns  Json
+  comments   Json
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  textLabels Json?
+  customer   Customer    @relation(fields: [customerId], references: [id])
+
+  @@unique([customerId, section])
+}
+
+/// --------------------------------------------------------------------
+/// 3. TRAINING-WITH-PURPOSE  (3 × 3 suggestions)
+/// – one row per suggestion; each category owns its own Save button
+/// --------------------------------------------------------------------
+model TrainingPurpose {
+  id         String           @id @default(uuid())
+  customerId String
+  category   TrainingCategory
+  slot       Int
+  title      String
+  paragraph  String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  customer   Customer         @relation(fields: [customerId], references: [id])
+
+  @@unique([customerId, category, slot])
+}
+
+/// --------------------------------------------------------------------
+/// 4. MOVEMENT-SIGNATURE  (identity + 1-10 rating bar)
+/// – one row per customer
+/// --------------------------------------------------------------------
+model MovementSignature {
+  id              String   @id @default(uuid())
+  customerId      String   @unique
+  identity        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  enduranceRating Int      @default(5)
+  mobilityRating  Int      @default(5)
+  strengthRating  Int      @default(5)
+  customer        Customer @relation(fields: [customerId], references: [id])
 }
 
 model Temp {
@@ -20,84 +154,97 @@ model Temp {
   fullName         String
   age              Int
   gender           Gender
-  email            String   
+  email            String
   whatsapp         String
-  SessionNo    Int    
-  medicalHistory   String?  // Optional
+  SessionNo        Int
+  medicalHistory   String?
   whyMove          String
   fitnessGoal      String
   consentAgreement Boolean  @default(true)
   ageConfirmation  Boolean
-  paymentStatus String
-
-  timeSlot  TimeSlot @relation("TimeSlotToTemp", fields: [timeSlotId], references: [id])
-  timeSlotId String
-  createdAt        DateTime  @default(now())
+  paymentStatus    String
+  timeSlotId       String
+  createdAt        DateTime @default(now())
+  timeSlot         TimeSlot @relation("TimeSlotToTemp", fields: [timeSlotId], references: [id])
 }
 
 model Client {
-  id               String   @id @default(uuid())
-  fullName         String
-  age              Int
-  gender           Gender
-  email            String   
-  whatsapp         String   
-  medicalHistory   String?  // Optional
-  whyMove          String
-  fitnessGoal      String
-  uniqueId         String   @unique
-  createdAt        DateTime  @default(now())
-  Booking          Booking[]
+  id             String    @id @default(uuid())
+  fullName       String
+  age            Int
+  gender         Gender
+  email          String
+  whatsapp       String
+  medicalHistory String?
+  whyMove        String
+  fitnessGoal    String
+  uniqueId       String
+  createdAt      DateTime  @default(now())
+  Booking        Booking[]
 }
 
 model SlotDate {
-  id         String   @id @default(uuid())
+  id         String     @id @default(uuid())
   date       DateTime
   locationId String
-  location   Location  @relation(fields: [locationId], references: [id])
-  timeSlots  TimeSlot[]  // 1:N relation
-}
-model Location {
-  id       String   @id @default(uuid())
-  name     String
-  address  String
-  link     String?   // <-- new field to store Google Maps or other location link
-  dates    SlotDate[]  // 1:N relation
+  location   Location   @relation(fields: [locationId], references: [id])
+  timeSlots  TimeSlot[]
 }
 
+model Location {
+  id      String     @id @default(uuid())
+  name    String
+  address String
+  link    String?
+  dates   SlotDate[]
+}
 
 model TimeSlot {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   startTime  DateTime
   endTime    DateTime
-  count      Int       
+  count      Int
   slotDateId String
-  slotDate   SlotDate @relation(fields: [slotDateId], references: [id])
   bookings   Booking[]
-  temps      Temp[]     @relation("TimeSlotToTemp")
+  temps      Temp[]    @relation("TimeSlotToTemp")
+  slotDate   SlotDate  @relation(fields: [slotDateId], references: [id])
 }
 
 model Booking {
-  id        String   @id @default(uuid())
-  orderId   String  
-  clientId    String
-  client      Client     @relation(fields: [clientId], references: [id])
-  clientSessionNo Int 
-  consentAgreement Boolean  @default(true)
+  id               String         @id @default(uuid())
+  orderId          String
+  clientId         String
+  clientSessionNo  Int
+  consentAgreement Boolean        @default(true)
   ageConfirmation  Boolean
   paymentId        String
   paymentStatus    PaymentStatus? @default(PENDING)
-  invoiceNumber Int      @default(autoincrement())
-  timeSlot  TimeSlot @relation(fields: [timeSlotId], references: [id])
-  timeSlotId String
-  createdAt DateTime @default(now())
+  invoiceNumber    Int            @default(autoincrement())
+  timeSlotId       String
+  createdAt        DateTime       @default(now())
+  client           Client         @relation(fields: [clientId], references: [id])
+  timeSlot         TimeSlot       @relation(fields: [timeSlotId], references: [id])
 }
-
 
 model Config {
   id        String   @id @default(uuid())
   price     Int
   updatedAt DateTime @updatedAt
+}
+
+/// --------------------------------------------------------------------
+/// 1. ENUMS – keep the string literals out of tables for consistency
+/// --------------------------------------------------------------------
+enum EvalSection {
+  mobility
+  strength
+  endurance
+}
+
+enum TrainingCategory {
+  expand
+  improve
+  injury
 }
 
 enum Gender {

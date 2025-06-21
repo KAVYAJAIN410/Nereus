@@ -4,11 +4,11 @@ CREATE TYPE "EvalSection" AS ENUM ('mobility', 'strength', 'endurance');
 -- CreateEnum
 CREATE TYPE "TrainingCategory" AS ENUM ('expand', 'improve', 'injury');
 
--- DropIndex
-DROP INDEX "Client_email_key";
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
 
--- DropIndex
-DROP INDEX "Client_uniqueId_key";
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUND');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -29,7 +29,6 @@ CREATE TABLE "Customer" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "age" INTEGER NOT NULL,
-    "UniqueId" TEXT,
     "gender" TEXT NOT NULL,
     "height" DOUBLE PRECISION NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL,
@@ -39,6 +38,7 @@ CREATE TABLE "Customer" (
     "mood" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "UniqueId" TEXT,
 
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
@@ -93,10 +93,10 @@ CREATE TABLE "ExerciseAssetFile" (
     "fileType" TEXT NOT NULL,
     "s3PathRaw" TEXT NOT NULL,
     "s3PathProcessed" TEXT,
-    "analysisResults" JSONB,
     "status" TEXT NOT NULL DEFAULT 'uploaded',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "analysisResults" JSONB,
 
     CONSTRAINT "ExerciseAssetFile_pkey" PRIMARY KEY ("id")
 );
@@ -108,9 +108,9 @@ CREATE TABLE "SectionEvaluation" (
     "section" "EvalSection" NOT NULL,
     "dropdowns" JSONB NOT NULL,
     "comments" JSONB NOT NULL,
-    "textLabels" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "textLabels" JSONB,
 
     CONSTRAINT "SectionEvaluation_pkey" PRIMARY KEY ("id")
 );
@@ -134,13 +134,107 @@ CREATE TABLE "MovementSignature" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "identity" TEXT NOT NULL,
-    "mobilityRating" INTEGER NOT NULL DEFAULT 5,
-    "enduranceRating" INTEGER NOT NULL DEFAULT 5,
-    "strengthRating" INTEGER NOT NULL DEFAULT 5,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "enduranceRating" INTEGER NOT NULL DEFAULT 5,
+    "mobilityRating" INTEGER NOT NULL DEFAULT 5,
+    "strengthRating" INTEGER NOT NULL DEFAULT 5,
 
     CONSTRAINT "MovementSignature_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Temp" (
+    "id" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "age" INTEGER NOT NULL,
+    "gender" "Gender" NOT NULL,
+    "email" TEXT NOT NULL,
+    "whatsapp" TEXT NOT NULL,
+    "SessionNo" INTEGER NOT NULL,
+    "medicalHistory" TEXT,
+    "whyMove" TEXT NOT NULL,
+    "fitnessGoal" TEXT NOT NULL,
+    "consentAgreement" BOOLEAN NOT NULL DEFAULT true,
+    "ageConfirmation" BOOLEAN NOT NULL,
+    "paymentStatus" TEXT NOT NULL,
+    "timeSlotId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Temp_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Client" (
+    "id" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "age" INTEGER NOT NULL,
+    "gender" "Gender" NOT NULL,
+    "email" TEXT NOT NULL,
+    "whatsapp" TEXT NOT NULL,
+    "medicalHistory" TEXT,
+    "whyMove" TEXT NOT NULL,
+    "fitnessGoal" TEXT NOT NULL,
+    "uniqueId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Client_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SlotDate" (
+    "id" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "locationId" TEXT NOT NULL,
+
+    CONSTRAINT "SlotDate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Location" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "link" TEXT,
+
+    CONSTRAINT "Location_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TimeSlot" (
+    "id" TEXT NOT NULL,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3) NOT NULL,
+    "count" INTEGER NOT NULL,
+    "slotDateId" TEXT NOT NULL,
+
+    CONSTRAINT "TimeSlot_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Booking" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "clientId" TEXT NOT NULL,
+    "clientSessionNo" INTEGER NOT NULL,
+    "consentAgreement" BOOLEAN NOT NULL DEFAULT true,
+    "ageConfirmation" BOOLEAN NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "paymentStatus" "PaymentStatus" DEFAULT 'PENDING',
+    "invoiceNumber" SERIAL NOT NULL,
+    "timeSlotId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Booking_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Config" (
+    "id" TEXT NOT NULL,
+    "price" INTEGER NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Config_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -187,3 +281,19 @@ ALTER TABLE "TrainingPurpose" ADD CONSTRAINT "TrainingPurpose_customerId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "MovementSignature" ADD CONSTRAINT "MovementSignature_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Temp" ADD CONSTRAINT "Temp_timeSlotId_fkey" FOREIGN KEY ("timeSlotId") REFERENCES "TimeSlot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SlotDate" ADD CONSTRAINT "SlotDate_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "Location"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TimeSlot" ADD CONSTRAINT "TimeSlot_slotDateId_fkey" FOREIGN KEY ("slotDateId") REFERENCES "SlotDate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_timeSlotId_fkey" FOREIGN KEY ("timeSlotId") REFERENCES "TimeSlot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
