@@ -145,12 +145,12 @@ export default function PaymentSection({
                   <span className="text-gray-600">Time:</span>
                   <span className="font-medium">{selectedSlot?.timeSlot}</span>
                 </div>
-                <div className="border-t my-2 pt-2 flex justify-between">
+                {/* <div className="border-t my-2 pt-2 flex justify-between">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold">
                     ₹{amount !== null ? amount.toFixed(2) : "1"}
                   </span>
-                </div>
+                </div> */}
               </div>
             </div>
 
