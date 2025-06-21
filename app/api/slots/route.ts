@@ -1,7 +1,7 @@
 // File: app/api/slots/route.ts
 
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@/lib/generated/prisma'
+import { PrismaClient } from '../../../lib/generated/prisma'
 
 const prisma = new PrismaClient()
 

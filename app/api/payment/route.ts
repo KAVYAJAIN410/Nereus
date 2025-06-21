@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@/lib/generated/prisma"
+import { PrismaClient } from "../../../lib/generated/prisma"
 import { getRedisClient } from "../../../lib/redis"
 
 const prisma = new PrismaClient()
@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Find or create user
-    const existingUser = await prisma.client.findUnique({
-      where: { email: tempEntry.email },
-    })
+const existingUser = await prisma.client.findFirst({
+  where: { email: tempEntry.email },
+})
 
     const userCount = await prisma.client.count()
     const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
