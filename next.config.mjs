@@ -10,8 +10,9 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-  serverActions: true, // only if you're using them
+  serverActions: {}, // only if you're using them
 },
+ 
 }
 
 export default nextConfig
