@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "../../../lib/generated/prisma";
+import { prisma } from "../../../lib/prisma";
 import Razorpay from "razorpay";
 
-const Prisma = new PrismaClient();
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Payment not captured yet." }, { status: 400 });
     }
 
-    const booking = await Prisma.booking.findFirst({
+    const booking = await prisma.booking.findFirst({
   where: { paymentId: razorpay_payment_id },
   select: {
     invoiceNumber: true,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     if (!booking) {
       return NextResponse.json({ success: false, message: "Booking not found." }, { status: 409 });
     }
-     const config = await Prisma.config.findFirst()
+     const config = await prisma.config.findFirst()
     const amount = (config?.price ?? 100) * 100
     return NextResponse.json({
       success: true,

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "../../../lib/generated/prisma"
+import { prisma } from "../../../lib/prisma"
 import { getRedisClient } from "../../../lib/redis"
 
-const prisma = new PrismaClient()
+
 
 export async function POST(request: NextRequest) {
   console.log("Received Razorpay webhook")

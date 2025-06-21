@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, Gender } from "../../../lib/generated/prisma"
+import { prisma} from "../../../lib/prisma"
+import { Gender } from '../../../lib/generated/prisma'
 import { getRedisClient } from '../../../lib/redis'
 import { nanoid } from 'nanoid'
 
-const Prisma = new PrismaClient()
+
 
 interface FormData {
   fullName: string
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // 1. Check slot availability (from DB)
-const slot = await Prisma.timeSlot.findUnique({
+const slot = await prisma.timeSlot.findUnique({
   where: { id: timeSlotId },
   select: { count: true },
 })
@@ -91,7 +92,7 @@ await redis.expire(redisKey, 300) // expire lock after 5 mins
 // 2. Save user data temporarily
 
 console.log(email)
-const tempEntry = await Prisma.temp.create({
+const tempEntry = await prisma.temp.create({
   data: {
     fullName,
     age: parsedAge,
@@ -115,7 +116,7 @@ const auth = Buffer.from(
 ).toString('base64')
 
 
-   const config = await Prisma.config.findFirst()
+   const config = await prisma.config.findFirst()
     const amount = (config?.price ?? 100) * 100
     const FIVE_MINUTES_FROM_NOW = Math.floor(Date.now() / 1000) + 5 * 60
 
@@ -141,7 +142,7 @@ if (!orderResponse.ok) {
   console.error('Razorpay order creation failed:', errorText)
 
   // Rollback: delete temp entry + Redis lock
-  await Prisma.temp.delete({ where: { id: tempEntry.id } })
+  await prisma.temp.delete({ where: { id: tempEntry.id } })
   await redis.decr(redisKey)
 
   return new NextResponse('Failed to create Razorpay order', { status: 500 })
