@@ -24,7 +24,7 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
               {currentStep > index + 1 ? <CheckCircle className="w-6 h-6" /> : index + 1}
             </div>
             <span
-              className={`mt-2 text-xs sm:text-sm ${
+              className={`mt-2 text-xs sm:text-sm hidden xs:visible ${
                 currentStep === index + 1
                   ? "text-[#5cd2ec] font-medium"
                   : currentStep > index + 1
