@@ -128,23 +128,41 @@ export async function POST(request: NextRequest) {
     // ✅ Send to n8n
     const amount = paymentEntity.amount / 100
 
-    await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: tempEntry.fullName,
-        email: tempEntry.email,
-        phone: tempEntry.whatsapp,
-        orderId,
-        paymentId,
-        amount,
-        sessionDate,
-        sessionStartTime: sessionStart.toISOString(), // still in UTC
-        reminderTriggerTime: formattedTriggerTime,
-      }),
-    }).catch(err => {
-      console.error("❌ n8n webhook failed:", err)
+   try {
+  const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: tempEntry.fullName,
+      email: tempEntry.email,
+      phone: tempEntry.whatsapp,
+      orderId,
+      paymentId,
+      amount,
+      sessionDate,
+      sessionStartTime: sessionStart.toISOString(),
+      reminderTriggerTime: formattedTriggerTime,
+    }),
+  })
+
+  if (n8nResponse.ok) {
+    await prisma.emailLog.create({
+      data: {
+        clientId: user.id,
+        emailType: "CONFIRMATION",
+        subject: "Your Nereus Testing Session is Confirmed",
+        status: "SENT",
+        sentVia: "EMAIL",
+        sessionDate: sessionDate,
+      },
     })
+  } else {
+    console.error("❌ n8n webhook failed with status:", n8nResponse.status)
+  }
+} catch (err) {
+  console.error("❌ Error triggering n8n webhook:", err)
+}
+
 
     return new NextResponse("✅ Booking created and automation triggered", { status: 200 })
 

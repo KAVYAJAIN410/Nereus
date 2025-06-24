@@ -3,8 +3,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 
-
-
 export async function GET() {
   try {
     const results = await prisma.$queryRaw<any[]>`
@@ -20,6 +18,7 @@ export async function GET() {
       JOIN "Location" l ON sd."locationId" = l.id
       JOIN "TimeSlot" ts ON ts."slotDateId" = sd.id
       WHERE ts.count > 0
+        AND ts."startTime" > NOW()
       ORDER BY sd.date ASC, ts."startTime" ASC;
     `
 

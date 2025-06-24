@@ -114,6 +114,25 @@ model SectionEvaluation {
 
   @@unique([customerId, section])
 }
+model EmailLog {
+  id          String   @id @default(uuid())
+  clientId    String
+  emailType   EmailType
+  subject     String
+  status      String   // e.g., SENT, FAILED
+  sentVia     String   // e.g., EMAIL, WHATSAPP
+  sessionDate DateTime
+  createdAt   DateTime @default(now())
+
+  client      Client   @relation(fields: [clientId], references: [id])
+}
+
+enum EmailType {
+  CONFIRMATION
+  REMINDER
+  PRE_SESSION
+  POST_SESSION
+}
 
 /// --------------------------------------------------------------------
 /// 3. TRAINING-WITH-PURPOSE  (3 × 3 suggestions)
@@ -181,6 +200,7 @@ model Client {
   uniqueId       String
   createdAt      DateTime  @default(now())
   Booking        Booking[]
+  EmailLog       EmailLog[]
 }
 
 model SlotDate {
