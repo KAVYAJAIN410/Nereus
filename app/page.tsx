@@ -13,8 +13,8 @@ export default function Home() {
 
           </div>
 
-          <h1 className="text-3xl text-[#5cd2ec] font-bold sm:text-4xl font-Gerant">Welcome to your Nereus Experience.</h1>
-          <p className="mt-3 text-xl text-white font-Gerante">Book your personalized wellness assessment session</p>
+          <h1 className="text-3xl text-[#5cd2ec] font-bold sm:text-4xl font-Gerant" style={{fontFamily:'Gerante'}} >Welcome to your Nereus Experience.</h1>
+
         </div>
         <BookingForm />
       </div>
