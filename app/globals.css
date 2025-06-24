@@ -12,6 +12,15 @@ body {
     text-wrap: balance;
   }
 }
+@font-face {
+  font-family: 'Gerant';
+  src: url('/Gerant.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+body {
+  font-family: 'Gerant';
+}
 
 @layer base {
   :root {

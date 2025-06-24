@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../lib/prisma"
 import { getRedisClient } from "../../../lib/redis"
-
-
+import { formatInTimeZone } from "date-fns-tz"
 
 export async function POST(request: NextRequest) {
-  console.log("Received Razorpay webhook")
+  console.log("✅ Received Razorpay webhook")
   let tempEntry = null
 
   try {
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse("Missing orderId, paymentId, or tempId", { status: 400 })
     }
 
-    // ✅ Fetch tempEntry using tempId directly
+    // ✅ Fetch temp entry with related slot
     tempEntry = await prisma.temp.findUnique({
       where: { id: tempId },
       select: {
@@ -38,6 +37,15 @@ export async function POST(request: NextRequest) {
         whyMove: true,
         fitnessGoal: true,
         id: true,
+        timeSlot: {
+          select: {
+            startTime: true,
+            endTime: true,
+            slotDate: {
+              select: { date: true },
+            },
+          },
+        },
       },
     })
 
@@ -46,9 +54,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Find or create user
-const existingUser = await prisma.client.findFirst({
-  where: { email: tempEntry.email },
-})
+    const existingUser = await prisma.client.findFirst({
+      where: { email: tempEntry.email },
+    })
 
     const userCount = await prisma.client.count()
     const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
@@ -63,44 +71,61 @@ const existingUser = await prisma.client.findFirst({
         medicalHistory: tempEntry.medicalHistory,
         whyMove: tempEntry.whyMove,
         fitnessGoal: tempEntry.fitnessGoal,
-        uniqueId: uniqueId,
+        uniqueId,
       },
     })
 
     // ✅ Update slot count
     await prisma.timeSlot.update({
       where: { id: tempEntry.timeSlotId },
-      data: {
-        count: {
-          decrement: 1,
-        },
-      },
+      data: { count: { decrement: 1 } },
     })
 
     // ✅ Remove Redis lock
     const redisKey = `lock:slot:${tempEntry.timeSlotId}`
     await redis.decr(redisKey)
 
-    // ✅ Create Booking
+    // ✅ Create booking
     await prisma.booking.create({
       data: {
-        orderId: orderId,
+        orderId,
         clientId: user.id,
         consentAgreement: tempEntry.consentAgreement,
         ageConfirmation: tempEntry.ageConfirmation,
         timeSlotId: tempEntry.timeSlotId,
         clientSessionNo: tempEntry.SessionNo,
         paymentStatus: "PAID",
-        paymentId: paymentId,
+        paymentId,
       },
     })
 
     // ✅ Delete temp entry
-    await prisma.temp.delete({
-      where: { id: tempEntry.id },
-    })
+    await prisma.temp.delete({ where: { id: tempEntry.id } })
 
-    // ✅ Trigger automation via n8n
+    // ✅ Calculate reminder time
+    const now = new Date()
+    const sessionStart = tempEntry.timeSlot.startTime
+    const sessionDate = tempEntry.timeSlot.slotDate.date
+
+    const timeDiff = sessionStart.getTime() - now.getTime()
+    let reminderTriggerTime: Date
+
+    if (timeDiff >= 24 * 60 * 60 * 1000) {
+      reminderTriggerTime = new Date(sessionStart.getTime() - 24 * 60 * 60 * 1000)
+    } else if (timeDiff > 15 * 60 * 1000) {
+      reminderTriggerTime = new Date(now.getTime() + timeDiff / 2)
+    } else {
+      reminderTriggerTime = new Date(now.getTime() + 1 * 60 * 1000)
+    }
+
+    // ✅ Proper ISO format in IST
+    const formattedTriggerTime = formatInTimeZone(
+      reminderTriggerTime,
+      "Asia/Kolkata",
+      "yyyy-MM-dd'T'HH:mm:ssXXX"
+    )
+
+    // ✅ Send to n8n
     const amount = paymentEntity.amount / 100
 
     await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
@@ -110,19 +135,21 @@ const existingUser = await prisma.client.findFirst({
         name: tempEntry.fullName,
         email: tempEntry.email,
         phone: tempEntry.whatsapp,
-        sessionTime: new Date().toISOString(), // Optional: replace with real timeSlot info
-        orderId: orderId,
-        paymentId: paymentId,
-        amount: amount,
+        orderId,
+        paymentId,
+        amount,
+        sessionDate,
+        sessionStartTime: sessionStart.toISOString(), // still in UTC
+        reminderTriggerTime: formattedTriggerTime,
       }),
     }).catch(err => {
-      console.error("n8n webhook failed:", err)
+      console.error("❌ n8n webhook failed:", err)
     })
 
-    return new NextResponse("Booking created and automation triggered", { status: 200 })
+    return new NextResponse("✅ Booking created and automation triggered", { status: 200 })
 
   } catch (error) {
-    console.error("Webhook error:", error)
+    console.error("❌ Webhook error:", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
