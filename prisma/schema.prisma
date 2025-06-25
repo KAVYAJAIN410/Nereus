@@ -38,6 +38,7 @@ model Customer {
   movementSignature  MovementSignature?
   sectionEvaluations SectionEvaluation[]
   tests              Test[]
+  ScoresToBeat        ScoresToBeat[]
   trainingPurposes   TrainingPurpose[]
 }
 
@@ -73,8 +74,9 @@ model TestRating {
   mobility         Int
   strength         Int
   endurance        Int
-  feedback         String?
-  customerFeedback String?
+  observation      String?
+  RPE              Int
+  FeltAfterWorkOut String
   testId           String   @unique
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
@@ -114,25 +116,6 @@ model SectionEvaluation {
 
   @@unique([customerId, section])
 }
-model EmailLog {
-  id          String   @id @default(uuid())
-  clientId    String
-  emailType   EmailType
-  subject     String
-  status      String   // e.g., SENT, FAILED
-  sentVia     String   // e.g., EMAIL, WHATSAPP
-  sessionDate DateTime
-  createdAt   DateTime @default(now())
-
-  client      Client   @relation(fields: [clientId], references: [id])
-}
-
-enum EmailType {
-  CONFIRMATION
-  REMINDER
-  PRE_SESSION
-  POST_SESSION
-}
 
 /// --------------------------------------------------------------------
 /// 3. TRAINING-WITH-PURPOSE  (3 × 3 suggestions)
@@ -151,6 +134,21 @@ model TrainingPurpose {
 
   @@unique([customerId, category, slot])
 }
+model ScoresToBeat {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+
+  title       String
+  current     Int
+  best        Int
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([customerId, title])  // ensures one score entry per title per customer
+}
+
 
 /// --------------------------------------------------------------------
 /// 4. MOVEMENT-SIGNATURE  (identity + 1-10 rating bar)
@@ -186,6 +184,25 @@ model Temp {
   createdAt        DateTime @default(now())
   timeSlot         TimeSlot @relation("TimeSlotToTemp", fields: [timeSlotId], references: [id])
 }
+model EmailLog {
+  id          String   @id @default(uuid())
+  clientId    String
+  emailType   EmailType
+  subject     String
+  status      String   // e.g., SENT, FAILED
+  sentVia     String   // e.g., EMAIL, WHATSAPP
+  sessionDate DateTime
+  createdAt   DateTime @default(now())
+
+  client      Client   @relation(fields: [clientId], references: [id])
+}
+
+enum EmailType {
+  CONFIRMATION
+  REMINDER
+  POST_SESSION
+  REPORT
+}
 
 model Client {
   id             String    @id @default(uuid())
@@ -200,15 +217,18 @@ model Client {
   uniqueId       String
   createdAt      DateTime  @default(now())
   Booking        Booking[]
-  EmailLog       EmailLog[]
+   EmailLog       EmailLog[]
 }
 
 model SlotDate {
   id         String     @id @default(uuid())
   date       DateTime
   locationId String
+  price      Int?
   location   Location   @relation(fields: [locationId], references: [id])
   timeSlots  TimeSlot[]
+
+  @@unique([date, locationId])
 }
 
 model Location {
@@ -279,3 +299,4 @@ enum PaymentStatus {
   FAILED
   REFUND
 }
+

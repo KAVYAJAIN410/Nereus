@@ -1,21 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import type { FormData } from "./booking-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { AlertCircle } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import Link from "next/link"
 
 interface ConsentFormProps {
   formData: FormData
@@ -116,77 +108,14 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
         </div>
 
         <div className="pt-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="link" className="text-navy-600 p-0">
-                View Terms and Conditions
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Terms and Conditions</DialogTitle>
-                <DialogDescription>Please read our terms and conditions carefully</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 text-sm">
-                <h3 className="font-semibold text-base">1. Introduction</h3>
-                <p>
-                  These Terms and Conditions govern your use of our wellness test services. By booking and participating
-                  in our wellness test, you agree to be bound by these Terms and Conditions.
-                </p>
-
-                <h3 className="font-semibold text-base">2. Service Description</h3>
-                <p>
-                  Our wellness test is designed to assess various aspects of your physical fitness and health. The test
-                  is conducted by qualified professionals and includes various physical assessments.
-                </p>
-
-                <h3 className="font-semibold text-base">3. Booking and Payment</h3>
-                <p>
-                  Booking is subject to availability. Payment must be made in full at the time of booking. We accept
-                  payment through our secure payment gateway.
-                </p>
-
-                <h3 className="font-semibold text-base">4. Cancellation and Refunds</h3>
-                <p>
-                  Cancellations made more than 24 hours before the scheduled session may be eligible for a refund or
-                  rescheduling. Cancellations within 24 hours of the scheduled session are non-refundable.
-                </p>
-
-                <h3 className="font-semibold text-base">5. Health and Safety</h3>
-                <p>
-                  You are responsible for ensuring that you are physically capable of participating in the wellness
-                  test. If you have any medical conditions or concerns, please consult with a healthcare professional
-                  before booking.
-                </p>
-
-                <h3 className="font-semibold text-base">6. Data Protection</h3>
-                <p>
-                  We collect and process personal data in accordance with our Privacy Policy. By booking a wellness
-                  test, you consent to the collection and processing of your personal data for the purposes of providing
-                  our services.
-                </p>
-
-                <h3 className="font-semibold text-base">7. Liability</h3>
-                <p>
-                  We take all reasonable precautions to ensure your safety during the wellness test. However, you
-                  participate at your own risk. We are not liable for any injuries or damages that may occur during the
-                  test.
-                </p>
-
-                <h3 className="font-semibold text-base">8. Changes to Terms</h3>
-                <p>
-                  We reserve the right to modify these Terms and Conditions at any time. Any changes will be effective
-                  immediately upon posting on our website.
-                </p>
-
-                <h3 className="font-semibold text-base">9. Contact Information</h3>
-                <p>
-                  If you have any questions or concerns about these Terms and Conditions, please contact us at
-                  support@wellnesstest.com.
-                </p>
-              </div>
-            </DialogContent>
-          </Dialog>
+           <Link
+    href="/CompanyTerms"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-sm font-medium text-[#5cd2ec] hover:underline"
+  >
+            View Terms and Conditions
+          </Link>
         </div>
       </div>
 

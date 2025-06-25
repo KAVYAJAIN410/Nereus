@@ -24,6 +24,7 @@ interface SlotSelectionFormProps {
 
 interface DateGroup {
   date: string
+  price?: number
   location: {
     name: string
     address: string
@@ -40,6 +41,7 @@ interface RawSlot {
 
 interface Slot {
   id: string
+  
   date: string
   location: {
     name: string
@@ -117,9 +119,10 @@ export default function SlotSelectionForm({ formData, updateFormData, nextStep, 
             </SelectTrigger>
             <SelectContent>
               {dateGroups.map((group) => (
-                <SelectItem key={group.date} value={group.date}>
-                  {new Date(group.date).toLocaleDateString()} — {group.location.name}
-                </SelectItem>
+               <SelectItem key={group.date} value={group.date}>
+  {new Date(group.date).toLocaleDateString()} — {group.location.name} — ₹{group.price ?? "N/A"}
+</SelectItem>
+
               ))}
             </SelectContent>
           </Select>

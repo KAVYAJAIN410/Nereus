@@ -9,6 +9,7 @@ export async function GET() {
       SELECT 
         sd.id AS "slotDateId",
         sd.date AS "slotDateDate",
+        sd.price AS "slotDatePrice",      
         l.name AS "locationName",
         ts.id AS "timeSlotId",
         ts."startTime" AS "startTime",
@@ -30,6 +31,7 @@ export async function GET() {
       if (!grouped[key]) {
         grouped[key] = {
           date: new Date(row.slotDateDate).toISOString(),
+           price: row.slotDatePrice,
           location: { name: row.locationName },
           timeSlots: [],
         }

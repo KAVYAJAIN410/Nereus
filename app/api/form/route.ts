@@ -116,8 +116,23 @@ const auth = Buffer.from(
 ).toString('base64')
 
 
-   const config = await prisma.config.findFirst()
-    const amount = (config?.price ?? 100) * 100
+  const timeSlot = await prisma.timeSlot.findUnique({
+  where: { id: timeSlotId },
+  include: { slotDate: true },
+})
+
+let price = timeSlot?.slotDate?.price
+
+if (price == null) {
+  const config = await prisma.config.findFirst()
+  if (!config || config.price == null) {
+    return NextResponse.json({ error: "Unable to determine price for booking" }, { status: 500 })
+  }
+  price = config.price
+}
+
+const amount = price * 100 // Razorpay requires amount in paise
+
     const FIVE_MINUTES_FROM_NOW = Math.floor(Date.now() / 1000) + 5 * 60
 
 
