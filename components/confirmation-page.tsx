@@ -72,7 +72,7 @@ const downloadInvoice = (data: any, selectedSlot: any) => {
 
   const description = "The Nereus Experience"
   const quantity = 1
-  const rate = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
+  const rate = data.amount  
   const amount = `₹${rate}`
 
   // Header
