@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../lib/prisma"
+
 import { getRedisClient } from "../../../lib/redis"
 import { formatInTimeZone } from "date-fns-tz"
 
@@ -128,6 +129,9 @@ export async function POST(request: NextRequest) {
     // ✅ Send to n8n
     const amount = paymentEntity.amount / 100
 
+    const sessionDateFormatted = formatInTimeZone(sessionDate, "Asia/Kolkata", "dd MMMM yyyy")
+const sessionTimeFormatted = formatInTimeZone(sessionStart, "Asia/Kolkata", "hh:mm a")
+
    try {
   const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
     method: "POST",
@@ -139,8 +143,8 @@ export async function POST(request: NextRequest) {
       orderId,
       paymentId,
       amount,
-      sessionDate,
-      sessionStartTime: sessionStart.toISOString(),
+      sessionDate: sessionDateFormatted,
+      sessionStartTime: sessionTimeFormatted,
       reminderTriggerTime: formattedTriggerTime,
     }),
   })
