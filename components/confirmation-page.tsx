@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import autoTable from "jspdf-autotable"
+
 import { CheckCircle, XCircle } from "lucide-react"
 import jsPDF from "jspdf"
 import type { FormData } from "./booking-form"
@@ -56,7 +58,7 @@ export default function ConfirmationPage({
     verifyPayment()
   }, [paymentId])
 
-const downloadInvoice = (data: any) => {
+const downloadInvoice = (data: any, selectedSlot: any) => {
   const doc = new jsPDF()
 
   const company = {
@@ -70,13 +72,11 @@ const downloadInvoice = (data: any) => {
 
   const description = "The Nereus Experience"
   const quantity = 1
-  const rate1 = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
-  const rate=rate1.replace("¹", "")
+  const rate = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
   const amount = `₹${rate}`
 
-  // --- Header ---
+  // Header
   doc.setFontSize(16)
-  doc.setTextColor(33, 33, 33)
   doc.text(company.name, 20, 20)
 
   doc.setFontSize(10)
@@ -85,113 +85,99 @@ const downloadInvoice = (data: any) => {
   doc.text(company.addressLine1, 20, 32)
   doc.text(company.addressLine2, 20, 37)
   doc.text(`Email: ${company.email} | Website: ${company.website}`, 20, 42)
-  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
 
-
-
-
-  // --- Invoice Title ---
+  // Invoice title
   doc.setFontSize(14)
   doc.setTextColor(0)
-doc.text("INVOICE", 20, 52)
+  doc.text("INVOICE", 20, 52)
 
-
-  // --- Invoice Metadata ---
-  const lineSpacing = 8
+  // Invoice Metadata
   let y = 65
-
   const invoiceDetails = [
     ["Invoice No.", data.invoiceNumber || "-"],
-    ["Invoice Date", new Date().toLocaleDateString()],
+    ["Invoice Date", new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })],
     ["Payment ID", data.paymentId || "-"],
     ["Booking Platform", "Razorpay"],
   ]
 
   invoiceDetails.forEach(([label, value]) => {
     doc.setFontSize(11)
+    doc.setTextColor(0)
     doc.text(`${label}:`, 20, y)
     doc.text(`${value}`, 80, y)
-    y += lineSpacing
+    y += 8
   })
 
-  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
-
-
-  // --- Billed To ---
-  y += 5
+  // Billed To
+  y += 8
   doc.setFontSize(12)
-  
   doc.text("Billed To", 20, y)
-  y += lineSpacing
+  y += 8
   doc.setFontSize(11)
   doc.text("Name:", 20, y)
   doc.text(data.fullName || "-", 80, y)
-  y += lineSpacing
+  y += 8
   doc.text("Email:", 20, y)
   doc.text(data.email || "-", 80, y)
 
-  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
-
-
-  // --- Session Details ---
-  y += lineSpacing + 5
+  // Session Details
+  y += 12
   doc.setFontSize(12)
   doc.text("Session Details", 20, y)
-  y += lineSpacing
+  y += 8
   doc.setFontSize(11)
   doc.text("Session Date:", 20, y)
   doc.text(selectedSlot?.date || "-", 80, y)
-  y += lineSpacing
+  y += 8
   doc.text("Session Time:", 20, y)
   doc.text(selectedSlot?.timeSlot || "-", 80, y)
-  y += lineSpacing
+  y += 8
   doc.text("Location:", 20, y)
   doc.text(selectedSlot?.location?.name || "Nereus Testing Facility", 80, y)
 
-  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
-
-
-  // --- Table ---
-  y += lineSpacing + 10
+  // Table using autoTable
+  y += 16
   doc.setFontSize(12)
-  doc.text("Description", 20, y)
-  doc.text("Qty", 100, y)
-  doc.text("Rate (INR)", 120, y)
-  doc.text("Amount (INR)", 160, y)
+  doc.text("Session Summary", 20, y)
 
-  y += lineSpacing
+  autoTable(doc, {
+    startY: y + 5,
+    head: [["Description", "Qty", "Rate (INR)", "Amount (INR)"]],
+    body: [[description, String(quantity), `₹${rate}`, `₹${rate}`]],
+    theme: "grid",
+    headStyles: {
+      fillColor: [92, 210, 236],
+      textColor: [255, 255, 255],
+      halign: "center",
+    },
+    bodyStyles: {
+      halign: "center",
+    },
+    styles: {
+      fontSize: 11,
+    },
+  })
+
+const finalY = (doc as any).lastAutoTable.finalY + 10
+
+
+  // Total + Status
   doc.setFontSize(11)
-  doc.text(description, 20, y)
-  doc.text(String(quantity), 105, y)
-  doc.text(`₹${rate}`, 120, y)
-  doc.text(`₹${rate}`, 160, y)
+  doc.setTextColor(0)
+  doc.text("Total Paid:", 20, finalY)
+  doc.text(`₹${rate}`, 80, finalY)
+  doc.text("Payment Status:", 20, finalY + 8)
+  doc.text("Paid", 80, finalY + 8)
 
-  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
-
-
-  // --- Total + Status ---
-  y += lineSpacing + 5
-  doc.setFontSize(11)
-  doc.text("Total Paid:", 20, y)
-  doc.text(`₹${rate}`, 80, y)
-  y += lineSpacing
-  doc.text("Payment Status:", 20, y)
-  doc.text("Paid", 80, y)
-
-doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
-
-
-  // --- Footer Note ---
-  y += lineSpacing + 10
+  // Footer Note
+  const footerY = finalY + 20
   doc.setFontSize(10)
   doc.setTextColor(100)
-  doc.text("This invoice confirms your booking for The Nereus Experience.", 20, y)
-  y += 6
-  doc.text("Further session instructions will be shared via WhatsApp and email.", 20, y)
+  doc.text("This invoice confirms your booking for The Nereus Experience.", 20, footerY)
+  doc.text("Further session instructions will be shared via WhatsApp and email.", 20, footerY + 6)
 
   doc.save(`Invoice_${data.invoiceNumber || "Nereus"}.pdf`)
 }
-
 
   if (status === "error") {
     return (
@@ -245,12 +231,13 @@ doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
       </p>
 
       <div className="pt-4">
-        <button
-          className="bg-[#5cd2ec] text-white px-4 py-2 rounded"
-          onClick={() => downloadInvoice(invoiceData)}
-        >
-          Download Invoice
-        </button>
+       <button
+  className="bg-[#5cd2ec] text-white px-4 py-2 rounded"
+  onClick={() => downloadInvoice(invoiceData, selectedSlot)}
+>
+  Download Invoice
+</button>
+
       </div>
 
       <div className="pt-6">
