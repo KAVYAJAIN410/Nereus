@@ -56,82 +56,120 @@ export default function ConfirmationPage({
     verifyPayment()
   }, [paymentId])
 
-  const downloadInvoice = (data: any) => {
-    const doc = new jsPDF()
-    const companyName = "Nereus Wellness"
+const downloadInvoice = (data: any) => {
+  const doc = new jsPDF()
 
-    doc.setFontSize(22)
-    doc.setTextColor(40, 40, 40)
-    doc.text(companyName, 20, 20)
-
-    doc.setFontSize(12)
-    doc.setTextColor(100)
-    doc.text("Session Booking Invoice", 20, 30)
-
-    doc.line(20, 35, 190, 35)
-
-    doc.setTextColor(0)
-    const infoStartY = 45
-    const lineSpacing = 10
-
-    const entries = [
-      [`Invoice No.`, data.invoiceNumber],
-      [`Payment ID`, data.paymentId],
-      [`Date`, new Date().toLocaleDateString()],
-      [`Name`, data.fullName],
-      [`Email`, data.email],
-      [`Session Date`, selectedSlot?.date],
-      [`Session Time`, selectedSlot?.timeSlot],
-      [`Amount Paid`, `₹${data.amount / 100}`],
-    ]
-
-    entries.forEach(([label, value], index) => {
-      const y = infoStartY + index * lineSpacing
-      doc.text(`${label}:`, 20, y)
-      doc.text(`${value}`, 80, y)
-    })
-
-    doc.setFontSize(10)
-    doc.setTextColor(130)
-    doc.text("This invoice is auto-generated for your confirmed booking.", 20, infoStartY + entries.length * lineSpacing + 10)
-    doc.text("For support, contact support@nereuswellness.com", 20, infoStartY + entries.length * lineSpacing + 18)
-
-    doc.save(`Invoice_${data.invoiceNumber}.pdf`)
+  const company = {
+    name: "NEREUS TECHNOLOGIES PRIVATE LIMITED",
+    cin: "U27900KA2023PTC175890",
+    addressLine1: "D-510, Sterling Residency, Dollars Colony, R.M.V. Extension II Stage,",
+    addressLine2: "Bangalore North, Bangalore-560094, Karnataka, India",
+    email: "info@nereustechnologies.com",
+    website: "www.nereustechnologies.com",
   }
 
-  // ✅ Loader UI
-  if (status === "loading") {
-    return (
-      <div className="flex flex-col items-center justify-center h-[70vh] text-white space-y-4">
-        <svg
-          className="animate-spin h-10 w-10 text-[#5cd2ec]"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          ></path>
-        </svg>
-        <div className="text-center space-y-2">
-          <p className="text-xl font-semibold">Verifying your payment...</p>
-          <p className="text-sm text-gray-300">
-            Please do not close this page. We're confirming your session.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const description = "The Nereus Experience"
+  const quantity = 1
+  const rate = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
+  const amount = `₹${rate}`
+
+  // --- Header ---
+  doc.setFontSize(16)
+  doc.setTextColor(33, 33, 33)
+  doc.text(company.name, 20, 20)
+
+  doc.setFontSize(10)
+  doc.setTextColor(80)
+  doc.text(`CIN: ${company.cin}`, 20, 27)
+  doc.text(company.addressLine1, 20, 32)
+  doc.text(company.addressLine2, 20, 37)
+  doc.text(`Email: ${company.email} | Website: ${company.website}`, 20, 42)
+
+  // --- Invoice Title ---
+  doc.setFontSize(14)
+  doc.setTextColor(0)
+  doc.text("INVOICE", 90, 52)
+
+  // --- Invoice Metadata ---
+  const lineSpacing = 8
+  let y = 65
+
+  const invoiceDetails = [
+    ["Invoice No.", data.invoiceNumber || "-"],
+    ["Invoice Date", new Date().toLocaleDateString()],
+    ["Payment ID", data.paymentId || "-"],
+    ["Booking Platform", "Razorpay"],
+  ]
+
+  invoiceDetails.forEach(([label, value]) => {
+    doc.setFontSize(11)
+    doc.text(`${label}:`, 20, y)
+    doc.text(`${value}`, 80, y)
+    y += lineSpacing
+  })
+
+  // --- Billed To ---
+  y += 5
+  doc.setFontSize(12)
+  doc.text("Billed To", 20, y)
+  y += lineSpacing
+  doc.setFontSize(11)
+  doc.text("Name:", 20, y)
+  doc.text(data.fullName || "-", 80, y)
+  y += lineSpacing
+  doc.text("Email:", 20, y)
+  doc.text(data.email || "-", 80, y)
+
+  // --- Session Details ---
+  y += lineSpacing + 5
+  doc.setFontSize(12)
+  doc.text("Session Details", 20, y)
+  y += lineSpacing
+  doc.setFontSize(11)
+  doc.text("Session Date:", 20, y)
+  doc.text(selectedSlot?.date || "-", 80, y)
+  y += lineSpacing
+  doc.text("Session Time:", 20, y)
+  doc.text(selectedSlot?.timeSlot || "-", 80, y)
+  y += lineSpacing
+  doc.text("Location:", 20, y)
+  doc.text(selectedSlot?.location?.name || "Nereus Testing Facility", 80, y)
+
+  // --- Table ---
+  y += lineSpacing + 10
+  doc.setFontSize(12)
+  doc.text("Description", 20, y)
+  doc.text("Qty", 100, y)
+  doc.text("Rate (INR)", 120, y)
+  doc.text("Amount (INR)", 160, y)
+
+  y += lineSpacing
+  doc.setFontSize(11)
+  doc.text(description, 20, y)
+  doc.text(String(quantity), 105, y)
+  doc.text(`₹${rate}`, 120, y)
+  doc.text(`₹${rate}`, 160, y)
+
+  // --- Total + Status ---
+  y += lineSpacing + 5
+  doc.setFontSize(11)
+  doc.text("Total Paid:", 20, y)
+  doc.text(`₹${rate}`, 80, y)
+  y += lineSpacing
+  doc.text("Payment Status:", 20, y)
+  doc.text("Paid", 80, y)
+
+  // --- Footer Note ---
+  y += lineSpacing + 10
+  doc.setFontSize(10)
+  doc.setTextColor(100)
+  doc.text("This invoice confirms your booking for The Nereus Experience.", 20, y)
+  y += 6
+  doc.text("Further session instructions will be shared via WhatsApp and email.", 20, y)
+
+  doc.save(`Invoice_${data.invoiceNumber || "Nereus"}.pdf`)
+}
+
 
   if (status === "error") {
     return (
