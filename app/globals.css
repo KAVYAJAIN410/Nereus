@@ -6,6 +6,15 @@
 body{
   font-family: poppins;
 }
+/* styles/globals.css or tailwind base */
+html,
+body {
+  background-color: #000;
+  color: white;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
 
 @layer utilities {
   .text-balance {
