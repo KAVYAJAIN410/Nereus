@@ -70,7 +70,8 @@ const downloadInvoice = (data: any) => {
 
   const description = "The Nereus Experience"
   const quantity = 1
-  const rate = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
+  const rate1 = data.amount ? (data.amount / 100).toFixed(2) : "0.00"
+  const rate=rate1.replace("¹", "")
   const amount = `₹${rate}`
 
   // --- Header ---
@@ -84,11 +85,16 @@ const downloadInvoice = (data: any) => {
   doc.text(company.addressLine1, 20, 32)
   doc.text(company.addressLine2, 20, 37)
   doc.text(`Email: ${company.email} | Website: ${company.website}`, 20, 42)
+  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
+
+
 
   // --- Invoice Title ---
   doc.setFontSize(14)
   doc.setTextColor(0)
-  doc.text("INVOICE", 90, 52)
+doc.text("INVOICE", 20, 52)
+
 
   // --- Invoice Metadata ---
   const lineSpacing = 8
@@ -108,9 +114,13 @@ const downloadInvoice = (data: any) => {
     y += lineSpacing
   })
 
+  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
+
   // --- Billed To ---
   y += 5
   doc.setFontSize(12)
+  
   doc.text("Billed To", 20, y)
   y += lineSpacing
   doc.setFontSize(11)
@@ -119,6 +129,9 @@ const downloadInvoice = (data: any) => {
   y += lineSpacing
   doc.text("Email:", 20, y)
   doc.text(data.email || "-", 80, y)
+
+  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
 
   // --- Session Details ---
   y += lineSpacing + 5
@@ -135,6 +148,9 @@ const downloadInvoice = (data: any) => {
   doc.text("Location:", 20, y)
   doc.text(selectedSlot?.location?.name || "Nereus Testing Facility", 80, y)
 
+  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
+
   // --- Table ---
   y += lineSpacing + 10
   doc.setFontSize(12)
@@ -150,6 +166,9 @@ const downloadInvoice = (data: any) => {
   doc.text(`₹${rate}`, 120, y)
   doc.text(`₹${rate}`, 160, y)
 
+  doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
+
   // --- Total + Status ---
   y += lineSpacing + 5
   doc.setFontSize(11)
@@ -158,6 +177,9 @@ const downloadInvoice = (data: any) => {
   y += lineSpacing
   doc.text("Payment Status:", 20, y)
   doc.text("Paid", 80, y)
+
+doc.line(20, 55, 190, 55) // x1=20, y1=55 to x2=190, y2=55
+
 
   // --- Footer Note ---
   y += lineSpacing + 10
