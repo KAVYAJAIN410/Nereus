@@ -54,15 +54,27 @@ export async function POST(request: NextRequest) {
       return new NextResponse("Temp data not found", { status: 404 })
     }
 
-    // ✅ Find or create user
-    const existingUser = await prisma.client.findFirst({
-      where: { email: tempEntry.email },
-    })
+const existingUser = await prisma.client.findFirst({
+  where: {
+    whatsapp: tempEntry.whatsapp,
+    fullName: {
+      equals: tempEntry.fullName,
+      mode: 'insensitive', // 👈 makes it case-insensitive
+    },
+  },
+})
 
-    const userCount = await prisma.client.count()
-    const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
+let uniqueId
 
-    const user = existingUser ?? await prisma.client.create({
+if (existingUser) {
+  uniqueId = existingUser.uniqueId
+} else {
+  const userCount = await prisma.client.count()
+  uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
+}
+
+
+    const user = await prisma.client.create({
       data: {
         fullName: tempEntry.fullName,
         age: tempEntry.age,
