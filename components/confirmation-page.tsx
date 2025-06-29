@@ -221,7 +221,7 @@ const finalY = (doc as any).lastAutoTable.finalY + 10
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Amount:</span>
-            <span className="font-medium">₹{invoiceData?.amount / 100}</span>
+            <span className="font-medium">₹{invoiceData?.amount}</span>
           </div>
         </div>
       </div>

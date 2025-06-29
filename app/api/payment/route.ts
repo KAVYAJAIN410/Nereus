@@ -64,29 +64,42 @@ const existingUser = await prisma.client.findFirst({
   },
 })
 
-let uniqueId
+
+let user
 
 if (existingUser) {
-  uniqueId = existingUser.uniqueId
+  // Update existing user
+  user = await prisma.client.update({
+    where: { id: existingUser.id },
+    data: {
+      age: tempEntry.age,
+      gender: tempEntry.gender,
+      email: tempEntry.email,
+      whatsapp: tempEntry.whatsapp,
+      medicalHistory: tempEntry.medicalHistory,
+      whyMove: tempEntry.whyMove,
+      fitnessGoal: tempEntry.fitnessGoal,
+    },
+  })
 } else {
+  // Create new user with new unique ID
   const userCount = await prisma.client.count()
-  uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
+  const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
+
+  user = await prisma.client.create({
+    data: {
+      fullName: tempEntry.fullName,
+      age: tempEntry.age,
+      gender: tempEntry.gender,
+      email: tempEntry.email,
+      whatsapp: tempEntry.whatsapp,
+      medicalHistory: tempEntry.medicalHistory,
+      whyMove: tempEntry.whyMove,
+      fitnessGoal: tempEntry.fitnessGoal,
+      uniqueId,
+    },
+  })
 }
-
-
-    const user = await prisma.client.create({
-      data: {
-        fullName: tempEntry.fullName,
-        age: tempEntry.age,
-        gender: tempEntry.gender,
-        email: tempEntry.email,
-        whatsapp: tempEntry.whatsapp,
-        medicalHistory: tempEntry.medicalHistory,
-        whyMove: tempEntry.whyMove,
-        fitnessGoal: tempEntry.fitnessGoal,
-        uniqueId,
-      },
-    })
 
     // ✅ Update slot count
     await prisma.timeSlot.update({

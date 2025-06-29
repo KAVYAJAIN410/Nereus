@@ -27,10 +27,10 @@ export default function Navbar() {
             />
           </Link>
         ) : (
-          <button onClick={() => router.back()} className="flex items-center text-[#5cd2ec]">
-            <ArrowLeft className="w-6 h-6 mr-2" />
-            <span className="text-lg font-semibold">Back</span>
-          </button>
+       <button onClick={() => router.push('/')} className="flex items-center text-[#5cd2ec]">
+  <ArrowLeft className="w-6 h-6 mr-2" />
+  <span className="text-lg font-semibold">Back</span>
+</button>
         )}
 
         {/* Desktop Menu */}

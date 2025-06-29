@@ -127,7 +127,7 @@ if (!formData.userSessionNo || Number(formData.userSessionNo) < 1) {
 
       {/* Section 2: Contact Info */}
       <div className="space-y-2 text-white">
-  <Label htmlFor="sessionNumber">Session Number <span className="text-red-500">*</span></Label>
+  <Label htmlFor="sessionNumber">Which session is this for you with us?<span className="text-red-500">*</span></Label>
   <Input
     id="sessionNumber"
     type="number"

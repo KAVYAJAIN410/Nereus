@@ -196,19 +196,20 @@ model EmailLog {
 }
 
 model Client {
-  id             String     @id @default(uuid())
-  fullName       String
-  age            Int
-  gender         Gender
-  email          String
-  whatsapp       String
-  medicalHistory String?
-  whyMove        String
-  fitnessGoal    String
-  uniqueId       String
-  createdAt      DateTime   @default(now())
-  Booking        Booking[]
-  EmailLog       EmailLog[]
+  id               String            @id @default(uuid())
+  fullName         String
+  age              Int
+  gender           Gender
+  email            String
+  whatsapp         String
+  medicalHistory   String?
+  whyMove          String
+  fitnessGoal      String
+  uniqueId         String
+  createdAt        DateTime          @default(now())
+  Booking          Booking[]
+  EmailLog         EmailLog[]
+  ManualClientTest ManualClientTest?
 }
 
 model SlotDate {
@@ -248,9 +249,9 @@ model Booking {
   clientSessionNo  Int
   consentAgreement Boolean        @default(true)
   ageConfirmation  Boolean
-  paymentId        String?
+  paymentId        String
   paymentStatus    PaymentStatus? @default(PENDING)
-  invoiceNumber    Int?           @default(autoincrement())
+  invoiceNumber    Int            @default(autoincrement())
   timeSlotId       String
   createdAt        DateTime       @default(now())
   client           Client         @relation(fields: [clientId], references: [id])
@@ -261,6 +262,14 @@ model Config {
   id        String   @id @default(uuid())
   price     Int
   updatedAt DateTime @updatedAt
+}
+
+model ManualClientTest {
+  id        String   @id
+  clientId  String   @unique
+  reason    String
+  createdAt DateTime @default(now())
+  Client    Client   @relation(fields: [clientId], references: [id])
 }
 
 enum EmailType {

@@ -51,17 +51,16 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
         <div className="text-sm text-gray-700 space-y-4">
           <p>
-            By proceeding with this booking, you acknowledge that the wellness test involves physical activity
-            assessment. Our qualified professionals will guide you through the process, but you participate at your own
-            risk.
+            By proceeding with this booking, you acknowledge that your session includes a physical performance test conducted by trained professionals. Participation is voluntary and at your own risk.
+
           </p>
           <p>
-            The data collected during your assessment will be used to provide personalized recommendations. We maintain
-            strict confidentiality of all personal information in accordance with data protection regulations.
+            During the session, we collect personal, physiological, and movement-related data to generate performance insights and improve our system. This data is securely stored, kept confidential, and never sold. Your information may be anonymized and used for research, benchmarking, and system development.
+
           </p>
           <p>
-            You have the right to request access to your data or its deletion at any time by contacting our support
-            team.
+          You may access or delete your personal data by contacting us. Refunds are available only under specific conditions outlined in our policy.
+
           </p>
         </div>
 
@@ -76,7 +75,8 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
               htmlFor="consentAgreement"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              I have read and understood the Consent and Data Usage Agreement above and agree to all terms therein.
+             I have read, understood, and voluntarily agree to the terms of this Master Participation & Consent Agreement. I confirm that I am above 18 years of age and legally competent to provide this consent.
+
             </Label>
             {errors.consentAgreement && (
               <p className="text-sm text-red-500 flex items-center gap-1">
