@@ -30,7 +30,7 @@ export async function GET() {
       const key = `${row.slotDateId}`
       if (!grouped[key]) {
         grouped[key] = {
-          date: new Date(row.slotDateDate).toISOString(),
+          date: row.slotDateDate,
            price: row.slotDatePrice,
           location: { name: row.locationName },
           timeSlots: [],
