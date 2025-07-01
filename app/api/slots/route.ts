@@ -1,5 +1,3 @@
-// File: app/api/slots/route.ts
-
 import { NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 
@@ -11,6 +9,8 @@ export async function GET() {
         sd.date AS "slotDateDate",
         sd.price AS "slotDatePrice",      
         l.name AS "locationName",
+        l.address AS "locationAddress",
+        l.link AS "locationLink",
         ts.id AS "timeSlotId",
         ts."startTime" AS "startTime",
         ts."endTime" AS "endTime",
@@ -31,8 +31,12 @@ export async function GET() {
       if (!grouped[key]) {
         grouped[key] = {
           date: row.slotDateDate,
-           price: row.slotDatePrice,
-          location: { name: row.locationName },
+          price: row.slotDatePrice,
+          location: {
+            name: row.locationName,
+            address: row.locationAddress,
+            link: row.locationLink,
+          },
           timeSlots: [],
         }
       }
