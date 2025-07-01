@@ -135,7 +135,16 @@ export default function PaymentSection({
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Date:</span>
-                  <span className="font-medium">{selectedSlot?.date}</span>
+                  <span className="font-medium">
+  {selectedSlot?.date
+    ? new Date(selectedSlot.date).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "-"}
+</span>
+
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Location:</span>

@@ -1,17 +1,10 @@
-"use client"
+'use client'
 
 import type React from "react"
 import { useEffect, useState } from "react"
 import type { FormData } from "./booking-form"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select"
 import { AlertCircle } from "lucide-react"
 
 interface SlotSelectionFormProps {
@@ -19,7 +12,7 @@ interface SlotSelectionFormProps {
   updateFormData: (data: Partial<FormData>) => void
   nextStep: () => void
   prevStep: () => void
-  setSelectedSlot: (slot: Slot | null) => void 
+  setSelectedSlot: (slot: Slot | null) => void
 }
 
 interface DateGroup {
@@ -41,7 +34,6 @@ interface RawSlot {
 
 interface Slot {
   id: string
-  
   date: string
   location: {
     name: string
@@ -51,7 +43,13 @@ interface Slot {
   timeSlot: string
 }
 
-export default function SlotSelectionForm({ formData, updateFormData, nextStep, prevStep, setSelectedSlot }: SlotSelectionFormProps) {
+export default function SlotSelectionForm({
+  formData,
+  updateFormData,
+  nextStep,
+  prevStep,
+  setSelectedSlot,
+}: SlotSelectionFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [dateGroups, setDateGroups] = useState<DateGroup[]>([])
   const [selectedDate, setSelectedDate] = useState<string>("")
@@ -72,13 +70,8 @@ export default function SlotSelectionForm({ formData, updateFormData, nextStep, 
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-
-    if (!selectedDate) {
-      newErrors.selectedDate = "Please select a date"
-    }
-    if (!formData.timeSlotId) {
-      newErrors.timeSlotId = "Please select a time slot"
-    }
+    if (!selectedDate) newErrors.selectedDate = "Please select a date"
+    if (!formData.timeSlotId) newErrors.timeSlotId = "Please select a time slot"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -104,33 +97,44 @@ export default function SlotSelectionForm({ formData, updateFormData, nextStep, 
       </div>
 
       <div className="space-y-4 text-white">
-        {/* Date Selection */}
-        <div>
-          <Label htmlFor="date">
-            Date <span className="text-red-500">*</span>
+        {/* Date Selection as Scrollable Cards */}
+        <div className="space-y-2">
+          <Label>
+            Select a Date <span className="text-red-500">*</span>
           </Label>
-          <Select onValueChange={(value) => {
-            setSelectedDate(value)
-            updateFormData({ timeSlotId: "" }) // reset time slot on date change
-            setSelectedSlot(null)
-          }} value={selectedDate}>
-            <SelectTrigger id="date">
-              <SelectValue placeholder="Select a date" />
-            </SelectTrigger>
-            <SelectContent>
-              {dateGroups.map((group) => (
-               <SelectItem key={group.date} value={group.date}>
-  {new Date(group.date).toLocaleDateString()} — {group.location.name} — ₹{group.price ?? "N/A"}
-</SelectItem>
-
-              ))}
-            </SelectContent>
-          </Select>
           {errors.selectedDate && (
-            <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+            <p className="text-sm text-red-500 flex items-center gap-1">
               <AlertCircle className="h-4 w-4" /> {errors.selectedDate}
             </p>
           )}
+
+          <div className="flex overflow-x-auto space-x-4 py-2 no-scrollbar">
+            {dateGroups.map((group) => {
+              const isSelected = group.date === selectedDate
+              return (
+                <div
+                  key={`${group.date}-${group.location.name}`}
+
+                  className={`min-w-[250px] p-4 rounded-lg cursor-pointer border transition-all ${
+                    isSelected
+                      ? "bg-[#5cd2ec] text-white border-[#5cd2ec]"
+                      : "bg-white text-gray-800"
+                  }`}
+                  onClick={() => {
+                    setSelectedDate(group.date)
+                    updateFormData({ timeSlotId: "" }) // reset time slot
+                    setSelectedSlot(null)
+                  }}
+                >
+                  <div className="font-semibold text-lg">
+                    {new Date(group.date).toLocaleDateString()}
+                  </div>
+                  <div className="text-sm"><span className="font-extrabold">Location:</span> {group.location.name}</div>
+                  <div className="text-sm">₹{group.price ?? "N/A"}</div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* Location Info */}
@@ -150,41 +154,40 @@ export default function SlotSelectionForm({ formData, updateFormData, nextStep, 
           </div>
         )}
 
-        {/* Time Slot Selection */}
-        {selectedDate && (
+        {/* Time Slot Selection as Buttons */}
+     {selectedGroup && selectedGroup.timeSlots && selectedGroup.timeSlots.length > 0 && (
+
           <div>
-            <Label htmlFor="timeSlot">
+            <Label>
               Time Slot <span className="text-red-500">*</span>
             </Label>
-            <Select
-              value={formData.timeSlotId}
-              onValueChange={(value) => {
-                updateFormData({ timeSlotId: value })
-                const rawSlot = selectedGroup?.timeSlots.find((s) => s.id === value) || null
-                if (rawSlot && selectedGroup) {
-                  const formattedSlot: Slot = {
-                    id: rawSlot.id,
-                    date: selectedGroup.date,
-                    location: selectedGroup.location,
-                    timeSlot: `${new Date(rawSlot.startTime).toLocaleTimeString()} - ${new Date(rawSlot.endTime).toLocaleTimeString()}`
-                  }
-                  setSelectedSlot(formattedSlot)
-                } else {
-                  setSelectedSlot(null)
-                }
-              }}
-            >
-              <SelectTrigger id="timeSlot">
-                <SelectValue placeholder="Select a time slot" />
-              </SelectTrigger>
-              <SelectContent>
-                {selectedGroup?.timeSlots.map((slot) => (
-                  <SelectItem key={slot.id} value={slot.id}>
-                    {new Date(slot.startTime).toLocaleTimeString()} - {new Date(slot.endTime).toLocaleTimeString()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedGroup.timeSlots.map((slot) => {
+                const slotLabel = `${new Date(slot.startTime).toLocaleTimeString()} - ${new Date(slot.endTime).toLocaleTimeString()}`
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    className={`px-4 py-2 rounded border ${
+                      formData.timeSlotId === slot.id
+                        ? "bg-[#5cd2ec] text-white border-[#5cd2ec]"
+                        : "bg-white text-gray-800"
+                    }`}
+                    onClick={() => {
+                      updateFormData({ timeSlotId: slot.id })
+                      setSelectedSlot({
+                        id: slot.id,
+                        date: selectedGroup.date,
+                        location: selectedGroup.location,
+                        timeSlot: slotLabel
+                      })
+                    }}
+                  >
+                    {slotLabel}
+                  </button>
+                )
+              })}
+            </div>
             {errors.timeSlotId && (
               <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
                 <AlertCircle className="h-4 w-4" /> {errors.timeSlotId}
