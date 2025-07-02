@@ -75,7 +75,7 @@ export default function ConsentForm({ formData, updateFormData, nextStep, prevSt
               htmlFor="consentAgreement"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-             I have read, understood, and voluntarily agree to the terms of this Master Participation & Consent Agreement. I confirm that I am above 18 years of age and legally competent to provide this consent.
+             I have read, understood, and voluntarily agree to the terms of this Master Participation & Consent Agreement. 
 
             </Label>
             {errors.consentAgreement && (

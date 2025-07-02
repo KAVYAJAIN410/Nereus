@@ -28,7 +28,7 @@ export default function Home() {
             }`}
             style={{ fontFamily: "Gerante" }}
           >
-            Welcome to <br className="sm:hidden" /> Nereus Experience.
+            Welcome to The<br className="sm:hidden" /> Nereus Experience.
           </h1>
         </div>
 
