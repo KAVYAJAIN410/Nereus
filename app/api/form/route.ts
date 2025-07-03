@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma} from "../../../lib/prisma"
-import { Gender } from '../../../lib/generated/prisma'
 import { getRedisClient } from '../../../lib/redis'
 import { nanoid } from 'nanoid'
+enum Gender {
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  OTHER = "OTHER"
+}
 
 
 
@@ -87,7 +91,7 @@ if (locked > SLOT_MAX_COUNT) {
   )
 }
 
-await redis.expire(redisKey, 300) // expire lock after 5 mins
+await redis.expire(redisKey, 720) // expire lock after 5 mins
 
 // 2. Save user data temporarily
 
@@ -133,7 +137,7 @@ if (price == null) {
 
 const amount = price * 100 // Razorpay requires amount in paise
 
-    const FIVE_MINUTES_FROM_NOW = Math.floor(Date.now() / 1000) + 5 * 60
+
 
 
 const orderResponse = await fetch('https://api.razorpay.com/v1/orders', {

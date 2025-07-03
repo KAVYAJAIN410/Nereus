@@ -7,7 +7,8 @@ export async function GET() {
       SELECT 
         sd.id AS "slotDateId",
         sd.date AS "slotDateDate",
-        sd.price AS "slotDatePrice",      
+        sd.price AS "slotDatePrice",
+        sd."locationId" AS "locationId",
         l.name AS "locationName",
         l.address AS "locationAddress",
         l.link AS "locationLink",
@@ -23,33 +24,33 @@ export async function GET() {
       ORDER BY sd.date ASC, ts."startTime" ASC;
     `
 
-    // Group by slotDate
     const grouped: Record<string, any> = {}
 
-    for (const row of results) {
-      const key = `${row.slotDateId}`
-      if (!grouped[key]) {
-        grouped[key] = {
-          date: row.slotDateDate,
-          price: row.slotDatePrice,
-          location: {
-            name: row.locationName,
-            address: row.locationAddress,
-            link: row.locationLink,
-          },
-          timeSlots: [],
-        }
-      }
-      grouped[key].timeSlots.push({
-        id: row.timeSlotId,
-        startTime: row.startTime,
-        endTime: row.endTime,
-      })
+for (const row of results) {
+  const key = row.slotDateId // This is now unique per date-location combination
+
+  if (!grouped[key]) {
+    grouped[key] = {
+      date: row.slotDateDate,
+      price: row.slotDatePrice,
+      location: {
+        id: row.locationId,
+        name: row.locationName,
+        address: row.locationAddress,
+        link: row.locationLink,
+      },
+      timeSlots: [],
     }
+  }
 
-    const formatted = Object.values(grouped)
+  grouped[key].timeSlots.push({
+    id: row.timeSlotId,
+    startTime: row.startTime,
+    endTime: row.endTime,
+  })
+}
 
-    return NextResponse.json(formatted)
+    return NextResponse.json(Object.values(grouped))
   } catch (error) {
     console.error('Error fetching slots:', error)
     return new NextResponse('Internal Server Error', { status: 500 })

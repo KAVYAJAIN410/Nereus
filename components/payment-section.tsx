@@ -33,7 +33,7 @@ export default function PaymentSection({
 }: PaymentSectionProps) {
   const [amount, setAmount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(300) // 5 min in seconds
+  
 
   useEffect(() => {
     const script = document.createElement("script")
@@ -46,16 +46,6 @@ export default function PaymentSection({
   }, [])
 
   // Timer countdown and expiry logic
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      nextStep() // Automatically go to next step
-      return
-    }
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1)
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [timeLeft])
 
   const handlePayment = async () => {
     setLoading(true)
@@ -116,9 +106,7 @@ export default function PaymentSection({
     }
   }
 
-  const minutes = Math.floor(timeLeft / 60)
-  const seconds = timeLeft % 60
-  const formattedTime = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`
+
 
   return (
     <div className="space-y-6">
@@ -163,14 +151,10 @@ export default function PaymentSection({
               </div>
             </div>
 
-            <p className="text-sm text-red-600 font-medium">
-              Please complete payment within{" "}
-              <span className="font-semibold">{formattedTime}</span>. You’ll be redirected after that.
-            </p>
-
+          
             <Button
               onClick={handlePayment}
-              disabled={loading || timeLeft <= 0}
+              disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 font-medium flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -178,8 +162,8 @@ export default function PaymentSection({
                   <Loader2 className="animate-spin w-5 h-5" />
                   Processing...
                 </>
-              ) : timeLeft <= 0 ? (
-                "Redirecting..."
+             
+            
               ) : (
                 "Pay Securely with Razorpay"
               )}

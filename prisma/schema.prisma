@@ -111,7 +111,6 @@ model SectionEvaluation {
   comments   Json
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-  textLabels Json?
   customer   Customer    @relation(fields: [customerId], references: [id])
 
   @@unique([customerId, section])
@@ -139,8 +138,8 @@ model ScoresToBeat {
   id         String   @id @default(uuid())
   customerId String
   title      String
-  current    Int
-  best       Int
+  current    String
+  best       String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   customer   Customer @relation(fields: [customerId], references: [id])
@@ -220,7 +219,7 @@ model SlotDate {
   location   Location   @relation(fields: [locationId], references: [id])
   timeSlots  TimeSlot[]
 
-  @@unique([date, locationId])
+ 
 }
 
 model Location {
