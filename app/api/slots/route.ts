@@ -7,7 +7,6 @@ export async function GET() {
       SELECT 
         sd.id AS "slotDateId",
         sd.date AS "slotDateDate",
-        sd.price AS "slotDatePrice",
         sd."locationId" AS "locationId",
         l.name AS "locationName",
         l.address AS "locationAddress",
@@ -32,7 +31,6 @@ for (const row of results) {
   if (!grouped[key]) {
     grouped[key] = {
       date: row.slotDateDate,
-      price: row.slotDatePrice,
       location: {
         id: row.locationId,
         name: row.locationName,

@@ -68,7 +68,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // 1. Check slot availability (from DB)
 const slot = await prisma.timeSlot.findUnique({
   where: { id: timeSlotId },
-  select: { count: true },
+  select: {
+    id: true,
+    price: true,
+    slotDate: true, // keep it if you're using `slotDate.date` somewhere
+    count:true
+  },
 })
 
 if(!slot){
@@ -125,7 +130,7 @@ const auth = Buffer.from(
   include: { slotDate: true },
 })
 
-let price = timeSlot?.slotDate?.price
+let price = timeSlot?.price
 
 if (price == null) {
   const config = await prisma.config.findFirst()

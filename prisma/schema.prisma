@@ -218,8 +218,6 @@ model SlotDate {
   price      Int?
   location   Location   @relation(fields: [locationId], references: [id])
   timeSlots  TimeSlot[]
-
- 
 }
 
 model Location {
@@ -236,6 +234,7 @@ model TimeSlot {
   endTime    DateTime
   count      Int
   slotDateId String
+  price      Int?
   bookings   Booking[]
   temps      Temp[]    @relation("TimeSlotToTemp")
   slotDate   SlotDate  @relation(fields: [slotDateId], references: [id])
