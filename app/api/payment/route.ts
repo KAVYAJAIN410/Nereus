@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../lib/prisma"
-
 import { getRedisClient } from "../../../lib/redis"
 import { formatInTimeZone } from "date-fns-tz"
 
@@ -9,6 +8,7 @@ export async function POST(request: NextRequest) {
   let tempEntry = null
 
   try {
+   
     const redis = await getRedisClient()
     const payload = await request.json()
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse("Missing orderId, paymentId, or tempId", { status: 400 })
     }
 
-    // ✅ Fetch temp entry with related slot
+    // ✅ Fetch temp entry with related slot and location
     tempEntry = await prisma.temp.findUnique({
       where: { id: tempId },
       select: {
@@ -43,7 +43,15 @@ export async function POST(request: NextRequest) {
             startTime: true,
             endTime: true,
             slotDate: {
-              select: { date: true },
+              select: {
+                date: true,
+                location: {
+                  select: {
+                    name: true,
+                    address: true,
+                  },
+                },
+              },
             },
           },
         },
@@ -54,54 +62,51 @@ export async function POST(request: NextRequest) {
       return new NextResponse("Temp data not found", { status: 404 })
     }
 
-const existingUser = await prisma.client.findFirst({
-  where: {
-    whatsapp: tempEntry.whatsapp,
-    fullName: {
-      equals: tempEntry.fullName,
-      mode: 'insensitive', // 👈 makes it case-insensitive
-    },
-  },
-})
+    const existingUser = await prisma.client.findFirst({
+      where: {
+        whatsapp: tempEntry.whatsapp,
+        fullName: {
+          equals: tempEntry.fullName,
+          mode: "insensitive",
+        },
+      },
+    })
 
+    let user
 
-let user
+    if (existingUser) {
+      user = await prisma.client.update({
+        where: { id: existingUser.id },
+        data: {
+          age: tempEntry.age,
+          gender: tempEntry.gender,
+          email: tempEntry.email,
+          whatsapp: tempEntry.whatsapp,
+          medicalHistory: tempEntry.medicalHistory,
+          whyMove: tempEntry.whyMove,
+          fitnessGoal: tempEntry.fitnessGoal,
+        },
+      })
+    } else {
+      const userCount = await prisma.client.count()
+      const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
 
-if (existingUser) {
-  // Update existing user
-  user = await prisma.client.update({
-    where: { id: existingUser.id },
-    data: {
-      age: tempEntry.age,
-      gender: tempEntry.gender,
-      email: tempEntry.email,
-      whatsapp: tempEntry.whatsapp,
-      medicalHistory: tempEntry.medicalHistory,
-      whyMove: tempEntry.whyMove,
-      fitnessGoal: tempEntry.fitnessGoal,
-    },
-  })
-} else {
-  // Create new user with new unique ID
-  const userCount = await prisma.client.count()
-  const uniqueId = `NT-${(userCount + 1).toString().padStart(4, "0")}`
+      user = await prisma.client.create({
+        data: {
+          fullName: tempEntry.fullName,
+          age: tempEntry.age,
+          gender: tempEntry.gender,
+          email: tempEntry.email,
+          whatsapp: tempEntry.whatsapp,
+          medicalHistory: tempEntry.medicalHistory,
+          whyMove: tempEntry.whyMove,
+          fitnessGoal: tempEntry.fitnessGoal,
+          uniqueId,
+        },
+      })
+    }
 
-  user = await prisma.client.create({
-    data: {
-      fullName: tempEntry.fullName,
-      age: tempEntry.age,
-      gender: tempEntry.gender,
-      email: tempEntry.email,
-      whatsapp: tempEntry.whatsapp,
-      medicalHistory: tempEntry.medicalHistory,
-      whyMove: tempEntry.whyMove,
-      fitnessGoal: tempEntry.fitnessGoal,
-      uniqueId,
-    },
-  })
-}
-
-    // ✅ Update slot count
+    // ✅ Decrement slot count
     await prisma.timeSlot.update({
       where: { id: tempEntry.timeSlotId },
       data: { count: { decrement: 1 } },
@@ -144,57 +149,74 @@ if (existingUser) {
       reminderTriggerTime = new Date(now.getTime() + 1 * 60 * 1000)
     }
 
-    // ✅ Proper ISO format in IST
     const formattedTriggerTime = formatInTimeZone(
       reminderTriggerTime,
       "Asia/Kolkata",
       "yyyy-MM-dd'T'HH:mm:ssXXX"
     )
 
-    // ✅ Send to n8n
     const amount = paymentEntity.amount / 100
 
     const sessionDateFormatted = formatInTimeZone(sessionDate, "Asia/Kolkata", "dd MMMM yyyy")
-const sessionTimeFormatted = formatInTimeZone(sessionStart, "Asia/Kolkata", "hh:mm a")
+    const sessionTimeFormatted = formatInTimeZone(sessionStart, "Asia/Kolkata", "hh:mm a")
 
-   try {
-  const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: tempEntry.fullName,
-      email: tempEntry.email,
-      phone: tempEntry.whatsapp,
-      orderId,
-      paymentId,
-      amount,
-      sessionDate: sessionDateFormatted,
-      sessionStartTime: sessionTimeFormatted,
-      reminderTriggerTime: formattedTriggerTime,
-    }),
-  })
+    // ✅ Send to n8n webhook with location
+    const locationName = tempEntry.timeSlot.slotDate.location.name
+    const locationAddress = tempEntry.timeSlot.slotDate.location.address
 
-  if (n8nResponse.ok) {
-    await prisma.emailLog.create({
-      data: {
-        clientId: user.id,
-        emailType: "CONFIRMATION",
-        subject: "Your Nereus Testing Session is Confirmed",
-        status: "SENT",
-        sentVia: "EMAIL",
-        sessionDate: sessionDate,
-      },
-    })
-  } else {
-    console.error("❌ n8n webhook failed with status:", n8nResponse.status)
-  }
-} catch (err) {
-  console.error("❌ Error triggering n8n webhook:", err)
-}
+    console.log("🚀 Payload to n8n:", {
+  name: tempEntry.fullName,
+  email: tempEntry.email,
+  phone: tempEntry.whatsapp,
+  orderId,
+  paymentId,
+  amount,
+  sessionDate: sessionDateFormatted,
+  sessionStartTime: sessionTimeFormatted,
+  reminderTriggerTime: formattedTriggerTime,
+  location: locationName,
+  locationAddress: locationAddress,
+})
 
+    try {
+     
+      const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tempEntry.fullName,
+          email: tempEntry.email,
+          phone: tempEntry.whatsapp,
+          orderId,
+          paymentId,
+          amount,
+          sessionDate: sessionDateFormatted,
+          sessionStartTime: sessionTimeFormatted,
+          reminderTriggerTime: formattedTriggerTime,
+          location: locationName,
+  locationAddress: locationAddress,
+        }),
+      })
+
+      if (n8nResponse.ok) {
+        await prisma.emailLog.create({
+          data: {
+            clientId: user.id,
+            emailType: "CONFIRMATION",
+            subject: "Your Nereus Testing Session is Confirmed",
+            status: "SENT",
+            sentVia: "EMAIL",
+            sessionDate: sessionDate,
+          },
+        })
+      } else {
+        console.error("❌ n8n webhook failed with status:", n8nResponse.status)
+      }
+    } catch (err) {
+      console.error("❌ Error triggering n8n webhook:", err)
+    }
 
     return new NextResponse("✅ Booking created and automation triggered", { status: 200 })
-
   } catch (error) {
     console.error("❌ Webhook error:", error)
     return new NextResponse("Internal Server Error", { status: 500 })
