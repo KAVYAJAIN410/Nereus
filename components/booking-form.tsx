@@ -31,6 +31,7 @@ export interface Slot {
     address: string
   }
   timeSlot: string
+  timeSlotId: string
 }
 export default function BookingForm() {
   const [currentStep, setCurrentStep] = useState(1)

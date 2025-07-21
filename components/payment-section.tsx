@@ -14,6 +14,14 @@ interface Slot {
     address: string
   }
   timeSlot: string
+  timeSlotId: string
+}
+
+interface PromoCode {
+  id: string
+  code: string
+  discountType: "flat" | "percent"
+  discountValue: number
 }
 
 interface PaymentSectionProps {
@@ -32,9 +40,12 @@ export default function PaymentSection({
   setPaymentId,
 }: PaymentSectionProps) {
   const [amount, setAmount] = useState<number | null>(null)
+  const [finalAmount, setFinalAmount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
+  const [selectedPromo, setSelectedPromo] = useState<PromoCode | null>(null)
 
+  // Razorpay script
   useEffect(() => {
     const script = document.createElement("script")
     script.src = "https://checkout.razorpay.com/v1/checkout.js"
@@ -45,16 +56,64 @@ export default function PaymentSection({
     }
   }, [])
 
-  // Timer countdown and expiry logic
+  // Fetch price
+  useEffect(() => {
+    async function fetchPrice() {
+      try {
+        const res = await fetch("/api/get-session-price", {
+          method: "POST",
+          body: JSON.stringify({ timeSlotId: selectedSlot?.timeSlotId }),
+          headers: { "Content-Type": "application/json" },
+        })
 
+        const data = await res.json()
+        setAmount(data.price)
+        setFinalAmount(data.price)
+      } catch (error) {
+        console.error("Failed to fetch session price", error)
+      }
+    }
+
+    if (selectedSlot?.timeSlotId) fetchPrice()
+  }, [selectedSlot?.timeSlotId])
+
+  // Fetch promo codes
+  useEffect(() => {
+    async function fetchPromos() {
+      const res = await fetch("/api/promocodes")
+      const data = await res.json()
+      setPromoCodes(data)
+    }
+
+    fetchPromos()
+  }, [])
+
+  // Apply discount when promo selected
+  useEffect(() => {
+    if (!amount || !selectedPromo) {
+      setFinalAmount(amount)
+      return
+    }
+
+    const discount =
+      selectedPromo.discountType === "flat"
+        ? selectedPromo.discountValue
+        : (selectedPromo.discountValue / 100) * amount
+
+    setFinalAmount(Math.max(0, amount - discount))
+  }, [selectedPromo, amount])
+
+  // Handle payment
   const handlePayment = async () => {
     setLoading(true)
     try {
-      console.log(formData)
       const response = await fetch("/api/form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          promoCodeId: selectedPromo?.id || null,
+        }),
       })
 
       const data = await response.json()
@@ -66,7 +125,6 @@ export default function PaymentSection({
       }
 
       const order = data.order
-      setAmount(order.amount / 100)
 
       if (!(window as any).Razorpay) {
         alert("Razorpay SDK failed to load.")
@@ -74,7 +132,7 @@ export default function PaymentSection({
         return
       }
 
-      const razorpayOptions = {
+      const rzp = new (window as any).Razorpay({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: "INR",
@@ -95,9 +153,8 @@ export default function PaymentSection({
         modal: {
           ondismiss: () => setLoading(false),
         },
-      }
+      })
 
-      const rzp = new (window as any).Razorpay(razorpayOptions)
       rzp.open()
     } catch (error) {
       console.error("Payment error:", error)
@@ -105,8 +162,6 @@ export default function PaymentSection({
       setLoading(false)
     }
   }
-
-
 
   return (
     <div className="space-y-6">
@@ -124,15 +179,14 @@ export default function PaymentSection({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Date:</span>
                   <span className="font-medium">
-  {selectedSlot?.date
-    ? new Date(selectedSlot.date).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "-"}
-</span>
-
+                    {selectedSlot?.date
+                      ? new Date(selectedSlot.date).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Location:</span>
@@ -142,16 +196,40 @@ export default function PaymentSection({
                   <span className="text-gray-600">Time:</span>
                   <span className="font-medium">{selectedSlot?.timeSlot}</span>
                 </div>
-                {/* <div className="border-t my-2 pt-2 flex justify-between">
-                  <span className="font-medium">Total Amount:</span>
-                  <span className="font-bold">
-                    ₹{amount !== null ? amount.toFixed(2) : "1"}
+
+                {/* Promo Code Selector */}
+                {promoCodes.length > 0 && (
+                  <div className="flex justify-between items-center gap-2 pt-2">
+                    <label className="text-gray-600 text-sm font-medium">Promo Code:</label>
+                    <select
+                      className="border rounded p-1 text-sm"
+                      value={selectedPromo?.id || ""}
+                      onChange={(e) => {
+                        const promo = promoCodes.find(p => p.id === e.target.value) || null
+                        setSelectedPromo(promo)
+                      }}
+                    >
+                      <option value="">-- Select Promo --</option>
+                      {promoCodes.map(promo => (
+                        <option key={promo.id} value={promo.id}>
+                          {promo.code} ({promo.discountType === "flat"
+                            ? `₹${promo.discountValue}`
+                            : `${promo.discountValue}%`} off)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="border-t my-2 pt-2 flex justify-between">
+                  <span className="font-medium text-gray-700">Total Amount:</span>
+                  <span className="font-bold text-black">
+                    ₹{finalAmount !== null ? finalAmount.toFixed(2) : "Loading..."}
                   </span>
-                </div> */}
+                </div>
               </div>
             </div>
 
-          
             <Button
               onClick={handlePayment}
               disabled={loading}
@@ -162,8 +240,6 @@ export default function PaymentSection({
                   <Loader2 className="animate-spin w-5 h-5" />
                   Processing...
                 </>
-             
-            
               ) : (
                 "Pay Securely with Razorpay"
               )}

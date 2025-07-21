@@ -23,12 +23,15 @@ interface FormData {
   consentAgreement: boolean
   ageConfirmation: boolean
   timeSlotId: string
+ promoCodeId: string
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const redis = await getRedisClient()
     const data: FormData = await req.json()
+
+    
 
     const {
       fullName,
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ageConfirmation,
       userSessionNo,
       timeSlotId,
+      promoCodeId,
     } = data
 
     // ✅ Server-side Validation
@@ -116,6 +120,7 @@ const tempEntry = await prisma.temp.create({
     SessionNo: userSessionNo,
     paymentStatus: 'PENDING',
     timeSlotId,
+     ...(promoCodeId ? { promoCodeId } : {})
   },
 })
 
@@ -140,6 +145,40 @@ if (price == null) {
   price = config.price
 }
 
+// ✅ Apply promo code if present
+if (promoCodeId) {
+
+  const promo = await prisma.promoCode.findFirst({
+    where: {
+      id: promoCodeId,
+      isActive: true,
+      OR: [
+        { expiryDate: null },
+        { expiryDate: { gt: new Date() } }
+      ],
+    }
+  })
+
+  if (!promo) {
+    return NextResponse.json({ error: "Invalid or expired promo code" }, { status: 400 })
+  }
+
+  // Optionally check usage limit
+  if (promo.usageLimit && promo.usedCount >= promo.usageLimit) {
+    return NextResponse.json({ error: "Promo code usage limit reached" }, { status: 400 })
+  }
+
+  // ✅ Apply discount
+  if (promo.discountType === "percent") {
+    price = price - (price * promo.discountValue) / 100
+  } else if (promo.discountType === "flat") {
+    price = price - promo.discountValue
+  }
+
+  // Minimum price check
+  if (price < 1) price = 1
+}
+console.log(price)
 const amount = price * 100 // Razorpay requires amount in paise
 
 

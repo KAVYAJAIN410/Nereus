@@ -30,6 +30,7 @@ for (const row of results) {
 
   if (!grouped[key]) {
     grouped[key] = {
+     
       date: row.slotDateDate,
       location: {
         id: row.locationId,

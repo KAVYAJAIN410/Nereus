@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     tempEntry = await prisma.temp.findUnique({
       where: { id: tempId },
       select: {
+        promoCodeId: true, // ✅ Add this
         SessionNo: true,
         timeSlotId: true,
         consentAgreement: true,
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
     await redis.decr(redisKey)
 
     // ✅ Create booking
-    await prisma.booking.create({
+   const booking= await prisma.booking.create({
       data: {
         orderId,
         clientId: user.id,
@@ -129,6 +130,16 @@ export async function POST(request: NextRequest) {
         paymentId,
       },
     })
+    
+    if (tempEntry.promoCodeId) {
+  await prisma.bookingPromo.create({
+    data: {
+      bookingId: booking.id,
+      promoCodeId: tempEntry.promoCodeId,
+    },
+  })
+}
+
 
     // ✅ Delete temp entry
     await prisma.temp.delete({ where: { id: tempEntry.id } })
@@ -180,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     try {
      
-      const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/591268f2-ef5d-452a-816b-9f41fc616f04", {
+      const n8nResponse = await fetch("http://129.154.255.167:5678/webhook/bfd92764-1f9f-4617-8376-ec77c17411b3", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

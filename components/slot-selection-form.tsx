@@ -42,6 +42,7 @@ interface Slot {
     link: string
   }
   timeSlot: string
+  timeSlotId:string
 }
 
 export default function SlotSelectionForm({
@@ -178,7 +179,8 @@ export default function SlotSelectionForm({
                       id: slot.id,
                       date: selectedDate,
                       location: selectedGroup.location,
-                      timeSlot: slotLabel
+                      timeSlot: slotLabel,
+                      timeSlotId:slot.id
                     })
                   }}
                 >
