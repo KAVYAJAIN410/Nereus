@@ -39,28 +39,41 @@ export async function POST(req: NextRequest) {
 
     // 2️⃣ Explicitly cast the result
     const booking = await prisma.booking.findFirst({
-      where: { paymentId: razorpay_payment_id },
+  where: { paymentId: razorpay_payment_id },
+  select: {
+    invoiceNumber: true,
+    paymentId: true,
+    createdAt: true,
+    client: {
       select: {
-        invoiceNumber: true,
-        paymentId: true,
-        createdAt: true,
-        client: {
+        fullName: true,
+        email: true,
+      },
+    },
+    timeSlot: {
+      select: {
+        slotDate: {
           select: {
-            fullName: true,
-            email: true,
-          },
-        },
-        timeSlot: {
-          select: {
-            slotDate: {
-              select: {
-                price: true,
-              },
-            },
+            price: true,
           },
         },
       },
-    }) as BookingWithClientAndSlot | null
+    },
+    promoUsage: {
+      select: {
+        promoCode: {
+          select: {
+            code: true,
+            discountType: true,
+            discountValue: true,
+          },
+        },
+      },
+    },
+  },
+}) as BookingWithClientAndSlot & {
+  promoUsage: { promoCode: { code: string; discountType: string; discountValue: number } }[]
+} | null;
 
     if (!booking) {
       return NextResponse.json({ success: false, message: "Booking not found." }, { status: 409 })
@@ -74,16 +87,24 @@ export async function POST(req: NextRequest) {
       }
       amount = config.price
     }
+const promo = booking.promoUsage[0]?.promoCode;
 
-    return NextResponse.json({
-      success: true,
-      invoiceNumber: `INV${booking.invoiceNumber.toString().padStart(4, "0")}`,
-      paymentId: booking.paymentId,
-      amount,
-      date: booking.createdAt,
-      fullName: booking.client.fullName,
-      email: booking.client.email,
-    })
+return NextResponse.json({
+  success: true,
+  invoiceNumber: `INV${booking.invoiceNumber.toString().padStart(4, "0")}`,
+  paymentId: booking.paymentId,
+  amount,
+  date: booking.createdAt,
+  fullName: booking.client.fullName,
+  email: booking.client.email,
+  promoCode: promo
+    ? {
+        code: promo.code,
+        discountType: promo.discountType,
+        discountValue: promo.discountValue,
+      }
+    : null,
+})
   } catch (err) {
     console.error("Payment verification failed:", err)
     return NextResponse.json({ success: false, message: "Failed to verify payment." }, { status: 500 })

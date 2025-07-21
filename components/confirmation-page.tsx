@@ -71,7 +71,23 @@ export default function ConfirmationPage({
 
     const description = "The Nereus Experience"
     const quantity = 1
-    const rate = data.amount
+    const rate = data.originalAmount ?? data.amount
+
+    const promo = data.promoCode
+    let discountValue = 0
+    let discountText = ""
+    let finalAmount = data.amount
+
+    if (promo) {
+      if (promo.discountType === "percent") {
+        discountValue = Math.round((rate * promo.discountValue) / 100)
+        discountText = `${promo.discountValue}% off`
+      } else if (promo.discountType === "flat" || promo.discountType === "amount") {
+        discountValue = promo.discountValue
+        discountText = `Flat INR ${promo.discountValue} off`
+      }
+    }
+    let totalPaid = data.amount - discountValue; // ✅ Correct
 
     // Header
     doc.setFontSize(16)
@@ -133,41 +149,42 @@ export default function ConfirmationPage({
     doc.text("Location:", 20, y)
     doc.text(selectedSlot?.location?.name || "Nereus Testing Facility", 80, y)
 
-    // Table using autoTable
+    // Pricing Summary
     y += 16
     doc.setFontSize(12)
-    doc.text("Session Summary", 20, y)
-
-    autoTable(doc, {
-      startY: y + 5,
-      head: [["Description", "Qty", "Rate (INR)", "Amount (INR)"]],
-      body: [[description, String(quantity), String(rate), String(rate)]],
-      theme: "grid",
-      headStyles: {
-        fillColor: [92, 210, 236],
-        textColor: [255, 255, 255],
-        halign: "center",
-      },
-      bodyStyles: {
-        halign: "center",
-      },
-      styles: {
-        fontSize: 11,
-      },
-    })
-
-    const finalY = (doc as any).lastAutoTable.finalY + 10
-
-    // Total + Status
+    doc.text("Pricing Summary", 20, y)
+    y += 10
     doc.setFontSize(11)
-    doc.setTextColor(0)
-    doc.text("Total Paid:", 20, finalY)
-    doc.text(`INR ${rate}`, 80, finalY)
-    doc.text("Payment Status:", 20, finalY + 8)
-    doc.text("Paid", 80, finalY + 8)
 
-    // Footer Note
-    const footerY = finalY + 20
+    // Original price
+    doc.text("Session Price", 20, y)
+    doc.text(`INR ${rate}`, 150, y, { align: "right" })
+    y += 8
+
+    // Discount
+    if (promo) {
+      doc.text("Promotional Discount", 20, y)
+      doc.text(`-INR ${discountValue} (${discountText})`, 150, y, { align: "right" })
+      y += 8
+
+      // Divider
+      doc.setDrawColor(180)
+      doc.line(20, y, 190, y)
+      y += 8
+    }
+
+    // Final amount
+    doc.setFont("bold")
+    doc.text("Total Paid", 20, y)
+    doc.text(`INR ${totalPaid}`, 150, y, { align: "right" })
+    doc.setFont("normal")
+
+    y += 10
+    doc.text("Payment Status", 20, y)
+    doc.text("Paid", 150, y, { align: "right" })
+
+    // Footer
+    const footerY = y + 20
     doc.setFontSize(10)
     doc.setTextColor(100)
     doc.text("This invoice confirms your booking for The Nereus Experience.", 20, footerY)
@@ -216,10 +233,7 @@ export default function ConfirmationPage({
             <span className="text-gray-600">Payment ID:</span>
             <span className="font-medium">{invoiceData?.paymentId}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Amount:</span>
-            <span className="font-medium">INR {invoiceData?.amount}</span>
-          </div>
+          
         </div>
       </div>
 
