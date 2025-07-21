@@ -42,6 +42,10 @@ export default function PaymentSection({
   const [loading, setLoading] = useState(false)
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
   const [promoLoading, setPromoLoading] = useState(true)
+  const [promoInput, setPromoInput] = useState("")
+const [promoError, setPromoError] = useState<string | null>(null)
+const [applyingPromo, setApplyingPromo] = useState(false)
+
   const [priceLoading, setPriceLoading] = useState(true)
   const [selectedPromo, setSelectedPromo] = useState<PromoCode | null>(null)
 
@@ -76,6 +80,12 @@ export default function PaymentSection({
   }, [selectedSlot?.timeSlotId])
 
   useEffect(() => {
+  const urlPromo = new URLSearchParams(window.location.search).get("promo")
+  if (urlPromo) setPromoInput(urlPromo.toUpperCase())
+}, [])
+
+
+  useEffect(() => {
     async function fetchPromos() {
       setPromoLoading(true)
       try {
@@ -105,6 +115,31 @@ export default function PaymentSection({
 
     setFinalAmount(Math.max(0, amount - discount))
   }, [selectedPromo, amount])
+
+  const handleApplyPromo = async () => {
+
+    if (selectedPromo?.code.toLowerCase() === promoInput.toLowerCase()) {
+  setApplyingPromo(false)
+  return
+}
+
+  setApplyingPromo(true)
+  setPromoError(null)
+const normalizedInput = promoInput.trim().toLowerCase()
+const matched = promoCodes.find(p => p.code.toLowerCase() === normalizedInput)
+
+
+  if (!matched) {
+    setSelectedPromo(null)
+    setPromoError("Invalid promo code.")
+    setApplyingPromo(false)
+    return
+  }
+
+  setSelectedPromo(matched)
+  setApplyingPromo(false)
+}
+
 
   const handlePayment = async () => {
     setLoading(true)
@@ -216,35 +251,40 @@ export default function PaymentSection({
                 </div>
 
                 {/* Promo Code Field */}
-                <div className="flex justify-between items-center gap-2 pt-2">
-                  <label className="text-gray-600 text-sm font-medium">Promo Code:</label>
-                  <select
-                    className="border rounded px-2 py-1 text-sm w-56"
-                    disabled={promoLoading || promoCodes.length === 0}
-                    value={selectedPromo?.id || ""}
-                    onChange={(e) => {
-                      const promo = promoCodes.find(p => p.id === e.target.value) || null
-                      setSelectedPromo(promo)
-                    }}
-                  >
-                    {promoLoading ? (
-                      <option>Loading...</option>
-                    ) : promoCodes.length === 0 ? (
-                      <option>No promo codes available</option>
-                    ) : (
-                      <>
-                        <option value="">-- Select Promo --</option>
-                        {promoCodes.map(promo => (
-                          <option key={promo.id} value={promo.id}>
-                            {promo.code} ({promo.discountType === "flat"
-                              ? `₹${promo.discountValue}`
-                              : `${promo.discountValue}%`} off)
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                </div>
+                {/* Promo Code Input */}
+<div className="pt-3 space-y-1">
+  <label className="text-gray-600 text-sm font-medium">Promo Code</label>
+  <div className="flex items-center gap-2">
+    <input
+      type="text"
+      placeholder="Enter promo code"
+      className="border rounded px-3 py-1 w-full text-sm"
+      value={promoInput}
+      onChange={(e) => {
+        setPromoInput(e.target.value.toUpperCase())
+        setPromoError(null)
+      }}
+    />
+    <Button
+      type="button"
+      className="px-4 py-2 h-9"
+      disabled={applyingPromo || !promoInput}
+      onClick={handleApplyPromo}
+    >
+      {applyingPromo ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        "Apply"
+      )}
+    </Button>
+  </div>
+  {promoError && <p className="text-red-600 text-xs">{promoError}</p>}
+  {selectedPromo && (
+    <p className="text-green-600 text-sm mt-1">
+      ✅ Promo code <strong>{selectedPromo.code}</strong> applied successfully!
+    </p>
+  )}
+</div>
 
                 <div className="border-t my-3 pt-3 flex justify-between items-center">
                   <span className="font-medium text-gray-700">Total Amount:</span>
