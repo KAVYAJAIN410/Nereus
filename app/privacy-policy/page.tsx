@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
     <main className="bg-black text-white min-h-screen px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold text-[#5cd2ec]">Privacy Policy</h1>
-        <p className="text-sm text-gray-400">Last Updated: [Insert Date]</p>
+       
         
         <p>
           This Privacy Policy (“Policy”) is issued by Nereus Technologies Private Limited, a private limited company
