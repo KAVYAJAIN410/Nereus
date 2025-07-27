@@ -19,7 +19,10 @@ export async function GET() {
       JOIN "Location" l ON sd."locationId" = l.id
       JOIN "TimeSlot" ts ON ts."slotDateId" = sd.id
       WHERE ts.count > 0
-        AND ts."startTime" > NOW()
+       AND (
+      sd.date > CURRENT_DATE OR
+      sd.date = CURRENT_DATE
+    )
       ORDER BY sd.date ASC, ts."startTime" ASC;
     `
 
